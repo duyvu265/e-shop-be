@@ -51,7 +51,8 @@ INSTALLED_APPS = [
     'ShoppingCart.apps.ShoppingCartConfig', # Ứng dụng quản lý giỏ hàng
     'ShoppingCartItem.apps.ShoppingCartItemConfig', # Ứng dụng quản lý mục giỏ hàng
     'SiteUser.apps.SiteUserConfig',        # Ứng dụng quản lý người dùng
-    'TransactionHistory.apps.TransactionHistoryConfig', # Ứng dụng quản lý lịch sử giao dịch
+    'TransactionHistory.apps.TransactionHistoryConfig', # Ứng dụng quản lý lịch sử giao dịch,
+    'rest_framework'
 ]
 
 
@@ -94,7 +95,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'e_shop_database',
         'USER': 'root',
-        "PASSWORD": '12345678',
+        # "PASSWORD": '12345678',
+        "PASSWORD": '123456',
         "HOST" : ''
     }
 }
