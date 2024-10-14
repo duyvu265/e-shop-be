@@ -40,18 +40,18 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'Chat.apps.ChatConfig',               # Ứng dụng chat
-    'Orders.apps.OrdersConfig',             # Ứng dụng quản lý đơn hàng
-    'OrdersLine.apps.OrdersLineConfig',     # Ứng dụng quản lý dòng đơn hàng
-    'Products.apps.ProductsConfig',        # Ứng dụng quản lý sản phẩm
-    'ProductsCategory.apps.ProductsCategoryConfig',  # Ứng dụng quản lý danh mục sản phẩm
-    'ProductsItem.apps.ProductsItemConfig',  # Ứng dụng quản lý mục sản phẩm
-    'ShippingMethod.apps.ShippingMethodConfig',  # Ứng dụng quản lý phương thức vận chuyển
-    'ShopOrder.apps.ShopOrderConfig',      # Ứng dụng quản lý đơn hàng cửa hàng
-    'ShoppingCart.apps.ShoppingCartConfig', # Ứng dụng quản lý giỏ hàng
-    'ShoppingCartItem.apps.ShoppingCartItemConfig', # Ứng dụng quản lý mục giỏ hàng
-    'SiteUser.apps.SiteUserConfig',        # Ứng dụng quản lý người dùng
-    'TransactionHistory.apps.TransactionHistoryConfig', # Ứng dụng quản lý lịch sử giao dịch,
+    'Chat.apps.ChatConfig',               
+    'Orders.apps.OrdersConfig',             
+    'OrdersLine.apps.OrdersLineConfig',    
+    'Products.apps.ProductsConfig',        
+    'ProductsCategory.apps.ProductsCategoryConfig', 
+    'ProductsItem.apps.ProductsItemConfig',  
+    'ShippingMethod.apps.ShippingMethodConfig',  
+    'ShopOrder.apps.ShopOrderConfig',      
+    'ShoppingCart.apps.ShoppingCartConfig', 
+    'ShoppingCartItem.apps.ShoppingCartItemConfig', 
+    'SiteUser.apps.SiteUserConfig',        
+    'TransactionHistory.apps.TransactionHistoryConfig', 
     'rest_framework'
 ]
 
