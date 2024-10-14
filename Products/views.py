@@ -2,15 +2,27 @@ from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from .models import Product
 from ProductsCategory.models import ProductCategory
+from django.contrib.auth.decorators import login_required
+from django.db.models import F 
 import json
 
 def product_list(request):
     if request.method == 'GET':
-        products = Product.objects.all().values(
-            'id', 'name', 'description', 'price', 'category__name', 'product_image', 'quantity'
+        products = Product.objects.annotate(
+            category_name=F('category__category_name')  
+        ).values(
+            'id', 
+            'name', 
+            'description', 
+            'price', 
+            'category_name',  
+            'category_id',  
+            'product_image', 
+            'quantity'
         )
         return JsonResponse(list(products), safe=False)
     return JsonResponse({'error': 'Invalid request method!'}, status=400)
+
 
 def create_product(request):
     if request.method == 'POST':
@@ -80,7 +92,6 @@ def delete_product(request, product_id):
         product.delete()
         return JsonResponse({'message': 'Product deleted successfully!'}, status=200)
     return JsonResponse({'error': 'Invalid request method!'}, status=400)
-
 def get_product_by_id(request, product_id):
     if request.method == 'GET':
         product = get_object_or_404(Product, id=product_id)
@@ -89,7 +100,8 @@ def get_product_by_id(request, product_id):
             'name': product.name,
             'description': product.description,
             'price': product.price,
-            'category': product.category.name,
+            'category_id': product.category.id,  #
+            'category_name': product.category.category_name, 
             'product_image': product.product_image.url if product.product_image else None,
             'quantity': product.quantity  
         }
