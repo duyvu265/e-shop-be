@@ -29,10 +29,10 @@ class UserPaymentMethod(models.Model):
     card_number = models.CharField(max_length=20)
     expiry_date = models.DateField()
     cvv = models.CharField(max_length=4)
-    cardholder_name = models.CharField(max_length=100)  # Tên chủ thẻ
-    is_active = models.BooleanField(default=True)  # Trạng thái
-    created_at = models.DateTimeField(auto_now_add=True)  # Ngày tạo
-    updated_at = models.DateTimeField(auto_now=True)  # Ngày cập nhật
+    cardholder_name = models.CharField(max_length=100)  
+    is_active = models.BooleanField(default=True)  
+    created_at = models.DateTimeField(auto_now_add=True) 
+    updated_at = models.DateTimeField(auto_now=True) 
 
     def __str__(self):
         return f"Payment method for {self.user}"
