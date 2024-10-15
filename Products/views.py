@@ -100,7 +100,7 @@ def get_product_by_id(request, product_id):
             'name': product.name,
             'description': product.description,
             'price': product.price,
-            'category_id': product.category.id,  #
+            'category_id': product.category.id,  
             'category_name': product.category.category_name, 
             'product_image': product.product_image.url if product.product_image else None,
             'quantity': product.quantity  

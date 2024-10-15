@@ -74,10 +74,27 @@ def update_site_user(request, id):
     if request.method == 'PUT':
         data = json.loads(request.body)
         try:
-            user = SiteUser.objects.get(id=id)
-            user.avatar = data.get('avatar', user.avatar)
-            user.phone_number = data.get('phone_number', user.phone_number)
-            user.save()
+            site_user = SiteUser.objects.get(id=id)
+            if 'avatar' in data:
+                site_user.avatar = data['avatar']
+            if 'phone_number' in data:
+                site_user.phone_number = data['phone_number']
+            auth_user = site_user.user  
+            if 'username' in data:
+                new_username = data['username']
+                if User.objects.exclude(id=auth_user.id).filter(username=new_username).exists():
+                    return JsonResponse({'error': 'Username already exists!'}, status=400)
+                auth_user.username = new_username
+            
+            if 'email' in data:
+                auth_user.email = data['email']
+            if 'first_name' in data:
+                auth_user.first_name = data['first_name']
+            if 'last_name' in data:
+                auth_user.last_name = data['last_name']
+            site_user.save()
+            auth_user.save()
+
             return JsonResponse({'message': 'SiteUser updated successfully!'}, status=200)
         except SiteUser.DoesNotExist:
             return JsonResponse({'error': 'SiteUser not found!'}, status=404)
