@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    get_users_list, create_site_user, update_site_user, delete_site_user,get_user_by_id
+    get_users_list, create_site_user, update_site_user, delete_site_user,get_user_by_id,login
 )
 
 urlpatterns = [

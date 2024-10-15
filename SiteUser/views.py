@@ -5,6 +5,7 @@ from .models import SiteUser, Address, UserPaymentMethod
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.shortcuts import get_object_or_404
+from django.contrib.auth import authenticate
 
 @csrf_exempt
 def get_users_list(request):
@@ -58,14 +59,28 @@ def create_site_user(request):
             user = User.objects.create_user(username=username, password=password, email=email)
             site_user = SiteUser(user=user, avatar=avatar, phone_number=phone_number)
             site_user.save()
-            refresh = RefreshToken.for_user(user)
-            return JsonResponse({
-                'message': 'SiteUser created successfully!',
-                'refresh': str(refresh),
-                'access': str(refresh.access_token)
-            }, status=201)
+            return JsonResponse({'message': 'SiteUser created successfully!'}, status=201)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Invalid request!'}, status=400)
+
+@csrf_exempt
+def login(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        username = data.get('username')
+        password = data.get('password')
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            refresh = RefreshToken.for_user(user)
+            return JsonResponse({
+                'message': 'Login successful!',
+                'refresh': str(refresh),
+                'access': str(refresh.access_token)
+            }, status=200)
+        else:
+            return JsonResponse({'error': 'Invalid credentials!'}, status=401)
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 
@@ -131,7 +146,6 @@ def get_addresses_list(request, user_id):
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 
-
 @csrf_exempt
 def update_address(request, user_id, address_id):
     if request.method == 'PUT':
@@ -146,6 +160,7 @@ def update_address(request, user_id, address_id):
         return JsonResponse({'message': 'Address updated successfully!'}, status=200)
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
+
 @csrf_exempt
 def delete_address(request, user_id, address_id):
     if request.method == 'DELETE':
@@ -154,6 +169,7 @@ def delete_address(request, user_id, address_id):
         return JsonResponse({'message': 'Address deleted successfully!'}, status=200)
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
+
 @csrf_exempt
 def get_payment_methods_list(request, user_id):
     if request.method == 'GET':
@@ -170,6 +186,7 @@ def get_payment_methods_list(request, user_id):
         return JsonResponse({'payment_methods': payment_methods_list}, status=200)
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
+
 @csrf_exempt
 def update_payment_method(request, user_id, payment_method_id):
     if request.method == 'PUT':
@@ -183,6 +200,7 @@ def update_payment_method(request, user_id, payment_method_id):
         return JsonResponse({'message': 'Payment method updated successfully!'}, status=200)
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
+
 @csrf_exempt
 def delete_payment_method(request, user_id, payment_method_id):
     if request.method == 'DELETE':
