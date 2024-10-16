@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from SiteUser.views import login,create_site_user,google_login
+from ProductsCategory.views import category_list
 
 
 urlpatterns = [
@@ -25,6 +26,7 @@ urlpatterns = [
     path('google-login/', google_login, name='google_login'),
     path('register/', create_site_user ,name="register"),
     path('products/', include('Products.urls')), 
+    path('categories/', category_list), 
     path('user/', include('SiteUser.urls')), 
     path('products/', include('Products.urls')), 
 ]

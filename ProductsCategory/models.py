@@ -1,7 +1,5 @@
 from django.db import models
 
-# Create your models here.
-# Mô hình danh mục sản phẩm
 class ProductCategory(models.Model):
     parent_category = models.ForeignKey(
         'self', 
@@ -11,6 +9,7 @@ class ProductCategory(models.Model):
         related_name='subcategories'
     )
     category_name = models.CharField(max_length=100, unique=True)
+    image_url = models.URLField(blank=True, null=True)  
 
     def __str__(self):
         return self.category_name
