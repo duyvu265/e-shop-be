@@ -15,7 +15,8 @@ def product_list(request):
             'is_active',
             'created_at',
             'updated_at',
-            'category__category_name'
+            'category__id',  
+            'category__category_name' 
         )
 
         product_list = []
@@ -29,8 +30,11 @@ def product_list(request):
                 'is_active': product['is_active'],
                 'created_at': product['created_at'],
                 'updated_at': product['updated_at'],
-                'category_name': product['category__category_name'],
-                'product_images': [image.url for image in ProductImage.objects.filter(product_id=product['id'])]
+                'category': {  
+                    'id': product['category__id'],
+                    'category_name': product['category__category_name']
+                },
+                'product_images': {f'image{i+1}': {'url': img.url} for i, img in enumerate(ProductImage.objects.filter(product_id=product['id']))}
             }
             product_list.append(product_data)
 
@@ -40,7 +44,7 @@ def product_list(request):
 
 def create_product(request):
     if request.method == 'POST':
-        required_fields = ['category_id', 'name', 'description', 'price', 'product_images']  # Thêm product_images
+        required_fields = ['category_id', 'name', 'description', 'price', 'product_images']  
         try:
             data = json.loads(request.body)
 
@@ -80,9 +84,11 @@ def get_product_by_id(request, product_id):
             'name': product.name,
             'description': product.description,
             'price': product.price,
-            'category_id': product.category.id,
-            'category_name': product.category.category_name,
-            'product_images': [image.url for image in product.images.all()],  # Trả về danh sách URL hình ảnh
+            'category': {  
+                'id': product.category.id,
+                'category_name': product.category.category_name
+            },
+            'product_images': {f'image{i+1}': {'url': image.url} for i, image in enumerate(product.images.all())},  
             'quantity': product.quantity,
             'is_active': product.is_active,
             'created_at': product.created_at,
@@ -115,11 +121,10 @@ def update_product(request, product_id):
             product.quantity = data.get('quantity', product.quantity)  
             product.save()
 
-            # Cập nhật danh sách URL hình ảnh
             product_images = data.get('product_images', [])
-            ProductImage.objects.filter(product=product).delete()  # Xóa tất cả hình ảnh cũ
+            ProductImage.objects.filter(product=product).delete()  
             for image_url in product_images:
-                ProductImage.objects.create(product=product, url=image_url)  # Thêm hình ảnh mới
+                ProductImage.objects.create(product=product, url=image_url)  
 
             return JsonResponse({'message': 'Product updated successfully!'}, status=200)
 
