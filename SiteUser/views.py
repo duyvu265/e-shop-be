@@ -6,6 +6,110 @@ from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate
+from django.contrib.auth import get_user_model
+import logging
+import requests
+
+
+logging.basicConfig(level=logging.DEBUG)
+
+@csrf_exempt
+def google_login(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            id_token = data.get('idToken')
+            response = requests.get(f'https://oauth2.googleapis.com/tokeninfo?id_token={id_token}')
+
+            if response.status_code != 200:
+                return JsonResponse({'error': 'Invalid token!'}, status=400)
+
+            user_info = response.json()
+
+            if 'email' in user_info:
+                email = user_info['email']
+                username = user_info['name']
+                avatar = user_info.get('picture')
+                phone_number = user_info.get('phone_number', None)  
+                site_user = SiteUser.objects.filter(user__email=email).first()
+
+                if site_user:
+                    site_user.avatar = avatar  
+                    site_user.phone_number = phone_number  
+                    site_user.save()
+                    return JsonResponse({
+                        'message': 'User exists, token saved!',
+                        'user_id': site_user.id,
+                        'userInfo': {  
+                            'id': site_user.id,
+                            'email': email,
+                            'username': username,
+                            'avatar': avatar,
+                            'phone_number': phone_number,
+                        }
+                    }, status=200)
+                else:
+                    user = User.objects.create_user(username=username, email=email)
+                    user.set_unusable_password()  
+                    user.save()
+                    site_user = SiteUser(user=user, avatar=avatar, phone_number=phone_number)
+                    site_user.save()
+                    return JsonResponse({
+                        'message': 'New user created!',
+                        'user_id': site_user.id,
+                        'userInfo': {  
+                            'id': site_user.id,
+                            'email': email,
+                            'username': username,
+                            'avatar': avatar,
+                            'phone_number': phone_number,
+                        }
+                    }, status=201)
+
+            return JsonResponse({'error': 'Invalid token!'}, status=400)
+
+        except json.JSONDecodeError as e:
+            return JsonResponse({'error': 'Invalid JSON!'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': 'An unexpected error occurred!'}, status=500)
+
+    return JsonResponse({'error': 'Invalid request!'}, status=400)
+
+@csrf_exempt
+def login(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        email = data.get('email')
+        password = data.get('password')
+
+        User = get_user_model()  
+        try:
+           
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'Invalid credentials!'}, status=401)
+
+        
+        if user.check_password(password):
+            refresh = RefreshToken.for_user(user)
+            site_user = SiteUser.objects.get(user=user)  
+            return JsonResponse({
+                'message': 'Login successful!',
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                'userInfo': {  
+                    'id': site_user.id,
+                    'email': user.email,
+                    'username': user.username,
+                    'avatar': site_user.avatar.url if site_user.avatar else None, 
+                    'phone_number': site_user.phone_number,
+                }
+            }, status=200)
+        else:
+            return JsonResponse({'error': 'Invalid credentials!'}, status=401)
+
+    return JsonResponse({'error': 'Invalid request!'}, status=400)
+
 
 @csrf_exempt
 def get_users_list(request):
@@ -65,24 +169,7 @@ def create_site_user(request):
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 
-@csrf_exempt
-def login(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        username = data.get('username')
-        password = data.get('password')
-        user = authenticate(username=username, password=password)
-        if user is not None:
-            refresh = RefreshToken.for_user(user)
-            return JsonResponse({
-                'message': 'Login successful!',
-                'refresh': str(refresh),
-                'access': str(refresh.access_token)
-            }, status=200)
-        else:
-            return JsonResponse({'error': 'Invalid credentials!'}, status=401)
 
-    return JsonResponse({'error': 'Invalid request!'}, status=400)
 
 @csrf_exempt
 def update_site_user(request, id):
