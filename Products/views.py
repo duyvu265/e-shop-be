@@ -1,32 +1,46 @@
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
-from .models import Product
+from .models import Product, ProductImage
 from ProductsCategory.models import ProductCategory
-from django.contrib.auth.decorators import login_required
-from django.db.models import F 
 import json
 
 def product_list(request):
     if request.method == 'GET':
-        products = Product.objects.annotate(
-            category_name=F('category__category_name')  
-        ).values(
-            'id', 
-            'name', 
-            'description', 
-            'price', 
-            'category_name',  
-            'category_id',  
-            'product_image', 
-            'quantity'
+        products = Product.objects.prefetch_related('images').values(
+            'id',
+            'name',
+            'description',
+            'price',
+            'quantity',
+            'is_active',
+            'created_at',
+            'updated_at',
+            'category__category_name'
         )
-        return JsonResponse(list(products), safe=False)
-    return JsonResponse({'error': 'Invalid request method!'}, status=400)
 
+        product_list = []
+        for product in products:
+            product_data = {
+                'id': product['id'],
+                'name': product['name'],
+                'description': product['description'],
+                'price': product['price'],
+                'quantity': product['quantity'],
+                'is_active': product['is_active'],
+                'created_at': product['created_at'],
+                'updated_at': product['updated_at'],
+                'category_name': product['category__category_name'],
+                'product_images': [image.url for image in ProductImage.objects.filter(product_id=product['id'])]
+            }
+            product_list.append(product_data)
+
+        return JsonResponse(product_list, safe=False)
+
+    return JsonResponse({'error': 'Invalid request method!'}, status=400)
 
 def create_product(request):
     if request.method == 'POST':
-        required_fields = ['category_id', 'name', 'description', 'price']  
+        required_fields = ['category_id', 'name', 'description', 'price', 'product_images']  # Thêm product_images
         try:
             data = json.loads(request.body)
 
@@ -38,8 +52,7 @@ def create_product(request):
             name = data['name']
             description = data['description']
             price = data['price']
-            quantity = data.get('quantity', 0) 
-            product_image = request.FILES.get('product_image')
+            quantity = data.get('quantity', 0)
 
             category = get_object_or_404(ProductCategory, id=category_id)
             product = Product(
@@ -47,14 +60,37 @@ def create_product(request):
                 name=name,
                 description=description,
                 price=price,
-                quantity=quantity,  
-                product_image=product_image
+                quantity=quantity
             )
             product.save()
+            product_images = data.get('product_images', [])
+            for image_url in product_images:
+                ProductImage.objects.create(product=product, url=image_url)
+
             return JsonResponse({'message': 'Product created successfully!'}, status=201)
 
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format!'}, status=400)
+
+def get_product_by_id(request, product_id):
+    if request.method == 'GET':
+        product = get_object_or_404(Product, id=product_id)
+        product_data = {
+            'id': product.id,
+            'name': product.name,
+            'description': product.description,
+            'price': product.price,
+            'category_id': product.category.id,
+            'category_name': product.category.category_name,
+            'product_images': [image.url for image in product.images.all()],  # Trả về danh sách URL hình ảnh
+            'quantity': product.quantity,
+            'is_active': product.is_active,
+            'created_at': product.created_at,
+            'updated_at': product.updated_at
+        }
+        return JsonResponse(product_data, status=200)
+    
+    return JsonResponse({'error': 'Invalid request method!'}, status=400)
 
 def update_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
@@ -77,10 +113,14 @@ def update_product(request, product_id):
                 product.category = category
 
             product.quantity = data.get('quantity', product.quantity)  
-            product_image = request.FILES.get('product_image', product.product_image)
-            product.product_image = product_image
-
             product.save()
+
+            # Cập nhật danh sách URL hình ảnh
+            product_images = data.get('product_images', [])
+            ProductImage.objects.filter(product=product).delete()  # Xóa tất cả hình ảnh cũ
+            for image_url in product_images:
+                ProductImage.objects.create(product=product, url=image_url)  # Thêm hình ảnh mới
+
             return JsonResponse({'message': 'Product updated successfully!'}, status=200)
 
         except json.JSONDecodeError:
@@ -91,21 +131,6 @@ def delete_product(request, product_id):
     if request.method == 'DELETE':
         product.delete()
         return JsonResponse({'message': 'Product deleted successfully!'}, status=200)
-    return JsonResponse({'error': 'Invalid request method!'}, status=400)
-def get_product_by_id(request, product_id):
-    if request.method == 'GET':
-        product = get_object_or_404(Product, id=product_id)
-        product_data = {
-            'id': product.id,
-            'name': product.name,
-            'description': product.description,
-            'price': product.price,
-            'category_id': product.category.id,  
-            'category_name': product.category.category_name, 
-            'product_image': product.product_image.url if product.product_image else None,
-            'quantity': product.quantity  
-        }
-        return JsonResponse(product_data, status=200)
     return JsonResponse({'error': 'Invalid request method!'}, status=400)
 
 def calculate_product_price(request, product_id):
