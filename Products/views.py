@@ -134,7 +134,7 @@ def update_product(request, product_id):
 def delete_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     if request.method == 'DELETE':
-        product.delete()
+        product.is_active=False
         return JsonResponse({'message': 'Product deleted successfully!'}, status=200)
     return JsonResponse({'error': 'Invalid request method!'}, status=400)
 
