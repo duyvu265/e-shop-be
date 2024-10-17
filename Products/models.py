@@ -7,8 +7,6 @@ class Product(models.Model):
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2) 
-    quantity = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
     def __str__(self):

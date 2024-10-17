@@ -1,7 +1,8 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
-from .models import SiteUser, Address, UserPaymentMethod
+from .models import SiteUser, Address, UserPaymentMethod,LikedProduct
+from Products.models import Product
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.shortcuts import get_object_or_404
@@ -9,7 +10,6 @@ from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 import logging
 import requests
-
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -37,6 +37,12 @@ def google_login(request):
                     site_user.avatar = avatar  
                     site_user.phone_number = phone_number  
                     site_user.save()
+
+                    liked_products = site_user.liked_products.all()
+                    liked_products_list = [{
+                     'id': liked_product.product.id,
+                     } for liked_product in liked_products]
+
                     return JsonResponse({
                         'message': 'User exists, token saved!',
                         'user_id': site_user.id,
@@ -46,6 +52,7 @@ def google_login(request):
                             'username': username,
                             'avatar': avatar,
                             'phone_number': phone_number,
+                            'liked_products': liked_products_list,
                         }
                     }, status=200)
                 else:
@@ -63,17 +70,19 @@ def google_login(request):
                             'username': username,
                             'avatar': avatar,
                             'phone_number': phone_number,
+                            'liked_products': [],  
                         }
                     }, status=201)
 
             return JsonResponse({'error': 'Invalid token!'}, status=400)
 
-        except json.JSONDecodeError as e:
+        except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON!'}, status=400)
         except Exception as e:
             return JsonResponse({'error': 'An unexpected error occurred!'}, status=500)
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
+
 
 @csrf_exempt
 def login(request):
@@ -84,15 +93,19 @@ def login(request):
 
         User = get_user_model()  
         try:
-           
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             return JsonResponse({'error': 'Invalid credentials!'}, status=401)
 
-        
         if user.check_password(password):
             refresh = RefreshToken.for_user(user)
-            site_user = SiteUser.objects.get(user=user)  
+            site_user = SiteUser.objects.get(user=user)
+
+            liked_products = site_user.liked_products.all()
+            liked_products_list = [{
+               'id': liked_product.product.id,
+} for liked_product in liked_products]
+
             return JsonResponse({
                 'message': 'Login successful!',
                 'refresh': str(refresh),
@@ -101,8 +114,9 @@ def login(request):
                     'id': site_user.id,
                     'email': user.email,
                     'username': user.username,
-                    'avatar': site_user.avatar.url if site_user.avatar else None, 
+                    'avatar': site_user.avatar.url if site_user.avatar else None,
                     'phone_number': site_user.phone_number,
+                    'liked_products': liked_products_list,
                 }
             }, status=200)
         else:
@@ -111,6 +125,46 @@ def login(request):
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 
 
+@csrf_exempt
+def like_product(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            product_id = data.get('productId')
+            user_id = data.get('userId')
+
+            site_user = get_object_or_404(SiteUser, id=user_id)
+            product = get_object_or_404(Product, id=product_id)
+            liked_product, created = LikedProduct.objects.get_or_create(user=site_user, product=product)
+
+            if created:
+                return JsonResponse({'message': 'Product liked successfully!'}, status=201)
+            else:
+                return JsonResponse({'message': 'Product already liked!'}, status=200)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Invalid request!'}, status=400)
+
+
+@csrf_exempt
+def get_liked_products(request, user_id):
+    if request.method == 'GET':
+        site_user = get_object_or_404(SiteUser, id=user_id)
+        liked_products = site_user.liked_products.all()
+        
+        liked_products_list = [{
+            'id': liked_product.product.id,
+            'name': liked_product.product.name,
+            'description': liked_product.product.description,  
+            'price': liked_product.product.price,
+            'image': liked_product.product.image.url if liked_product.product.image else None,
+        } for liked_product in liked_products]
+
+        return JsonResponse({'liked_products': liked_products_list}, status=200)
+
+    return JsonResponse({'error': 'Invalid request!'}, status=400)
 @csrf_exempt
 def get_users_list(request):
     if request.method == 'GET':
