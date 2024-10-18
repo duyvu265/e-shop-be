@@ -1,136 +1,108 @@
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from .models import ShoppingCart
 from ShoppingCartItem.models import ShoppingCartItem
-from ProductsItem.models import Product
-from django.contrib.auth.decorators import login_required
-
+from ProductsItem.models import ProductItem
+from SiteUser.models import SiteUser
+from Products.models import Product
 
 @api_view(['GET'])
-@login_required  
+@permission_classes([IsAuthenticated])
 def get_cart_items(request):
-    cart = get_object_or_404(ShoppingCart, site_user__id=request.user.id)
-    items = cart.items.all()  
-    cart_data = []
+    site_user = get_object_or_404(SiteUser, user=request.user)
+    cart = get_object_or_404(ShoppingCart, site_user=site_user)
 
-    for item in items:
-        cart_data.append({
-            "_id": item.product_item.id,
-            "productName": item.product_item.name,
-            "image": [image.url for image in item.product_item.images.all()],
-            "price": item.product_item.price,
-            "quantity": item.qty,
-            "availability": 'available' if item.product_item.quantity > 0 else 'out_of_stock',
-            "category": {
-                "category_name": item.product_item.category.category_name,
-                "image_url": item.product_item.category.image_url
-            },
+    cart_items = cart.items.all()  
+    items_data = []
+
+    for item in cart_items:
+      
+        product_item = get_object_or_404(ProductItem, id=item.product_id)
+        
+        items_data.append({
+            "product_id": product_item.product.id, 
+            "product_name": product_item.product.name,  
+            "price": product_item.price,  
+            "qty": item.qty,  
+            "color": product_item.color, 
+            "size": product_item.size,  
+            "qty_in_stock": product_item.qty_in_stock,  
         })
 
-    return JsonResponse({
-        "cart_id": cart.id,
-        "items": cart_data,
-        "subtotal": sum(item.product_item.price * item.qty for item in items)
-    }, status=status.HTTP_200_OK)
-
+    return JsonResponse(items_data, safe=False)
 
 @api_view(['POST'])
-@login_required
-def add_to_cart(request, cart_id):
-    cart = get_object_or_404(ShoppingCart, id=cart_id)
-    if cart.site_user != request.user:
-        return JsonResponse({"error": "Bạn không có quyền truy cập giỏ hàng này."}, status=status.HTTP_403_FORBIDDEN)
-    
-    product_id = request.data.get('product_id')
-    qty = int(request.data.get('qty'))
-    product_item = get_object_or_404(Product, id=product_id)
-    if qty > product_item.quantity:
-        return JsonResponse({"error": "Số lượng vượt quá số lượng có sẵn."}, status=status.HTTP_400_BAD_REQUEST)
-    
+@permission_classes([IsAuthenticated])
+def add_to_cart(request):
+    site_user = get_object_or_404(SiteUser, user=request.user)
+    cart, created = ShoppingCart.objects.get_or_create(site_user=site_user)
+
+    product_id = request.data.get('product_id')  
+    product = get_object_or_404(Product, id=product_id) 
     cart_item, created = ShoppingCartItem.objects.get_or_create(
         cart=cart,
-        product_item=product_item,
-        defaults={'qty': qty}
+        product_id=product.id, 
+        defaults={
+            'product_name': product.name,  
+            'status': 'available'  
+        }
     )
 
     if not created:
-        cart_item.qty += qty
-        cart_item.save()
+        pass
 
     return JsonResponse({
         "message": "Sản phẩm đã được thêm vào giỏ hàng!",
         "product": {
-            "_id": product_item.id,
-            "productName": product_item.name,
-            "image": [image.url for image in product_item.images.all()],
-            "price": product_item.price,
-            "quantity": cart_item.qty,
-            "availability": 'available' if product_item.quantity > 0 else 'out_of_stock',
-            "category": {
-                "category_name": product_item.category.category_name,
-                "image_url": product_item.category.image_url
-            }
+            "id": product.id,
+            "productName": product.name,
+            "status": cart_item.status,  
         }
     }, status=status.HTTP_201_CREATED)
 
 
+
+
 @api_view(['PUT'])
-@login_required
+@permission_classes([IsAuthenticated])
 def update_cart_item(request, item_id):
     cart_item = get_object_or_404(ShoppingCartItem, id=item_id)
 
-    if cart_item.cart.site_user != request.user:
+    if cart_item.cart.site_user.user != request.user:
         return JsonResponse({"error": "Bạn không có quyền chỉnh sửa sản phẩm này."}, status=status.HTTP_403_FORBIDDEN)
 
-    qty = int(request.data.get('qty'))
-    if qty > cart_item.product_item.quantity:
+    qty = int(request.data.get('qty', 0))
+    product_item = get_object_or_404(ProductItem, id=cart_item.product_id)
+
+    if qty > product_item.qty_in_stock:
         return JsonResponse({"error": "Số lượng vượt quá số lượng có sẵn."}, status=status.HTTP_400_BAD_REQUEST)
-    
+
     cart_item.qty = qty
     cart_item.save()
 
     return JsonResponse({
         "message": "Sản phẩm trong giỏ hàng đã được cập nhật!",
         "product": {
-            "_id": cart_item.product_item.id,
-            "productName": cart_item.product_item.name,
-            "image": [image.url for image in cart_item.product_item.images.all()],
-            "price": cart_item.product_item.price,
+            "id": cart_item.product_id,
+            "productName": cart_item.product_name,
+            "price": cart_item.price,
             "quantity": cart_item.qty,
-            "availability": 'available' if cart_item.product_item.quantity > 0 else 'out_of_stock',
-            "category": {
-                "category_name": cart_item.product_item.category.category_name,
-                "image_url": cart_item.product_item.category.image_url
-            }
         }
     }, status=status.HTTP_200_OK)
 
-
 @api_view(['DELETE'])
-@login_required
+@permission_classes([IsAuthenticated])
 def remove_from_cart(request, item_id):
     cart_item = get_object_or_404(ShoppingCartItem, id=item_id)
-    if cart_item.cart.site_user != request.user:
+    
+    if cart_item.cart.site_user.user != request.user:
         return JsonResponse({"error": "Bạn không có quyền xóa sản phẩm này."}, status=status.HTTP_403_FORBIDDEN)
-
-    product_data = {
-        "_id": cart_item.product_item.id,
-        "productName": cart_item.product_item.name,
-        "image": [image.url for image in cart_item.product_item.images.all()],
-        "price": cart_item.product_item.price,
-        "quantity": cart_item.qty,
-        "availability": 'available' if cart_item.product_item.quantity > 0 else 'out_of_stock',
-        "category": {
-            "category_name": cart_item.product_item.category.category_name,
-            "image_url": cart_item.product_item.category.image_url
-        }
-    }
 
     cart_item.delete()
     
     return JsonResponse({
-        "message": "Sản phẩm đã được xóa khỏi giỏ hàng!",
-        "product": product_data
+        "message": "Sản phẩm đã được xóa khỏi giỏ hàng!"
     }, status=status.HTTP_204_NO_CONTENT)

@@ -1,13 +1,13 @@
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
-from .models import Product, ProductImage
-from ProductsItem.models import ProductItem
+from .models import Product
+from ProductsItem.models import ProductItem,ProductImage
 from ProductsCategory.models import ProductCategory
 import json
 
 def product_list(request):
     if request.method == 'GET':
-        products = Product.objects.prefetch_related('images', 'items').values(
+        products = Product.objects.prefetch_related('items__images').values(
             'id',
             'name',
             'description',
@@ -20,6 +20,19 @@ def product_list(request):
 
         product_list = []
         for product in products:
+            product_items = []
+            for item in ProductItem.objects.filter(product_id=product['id']):
+                product_images = {f'image{i+1}': {'url': img.url} for i, img in enumerate(item.images.all())}
+                product_items.append({
+                    'id': item.id,
+                    'SKU': item.SKU,
+                    'qty_in_stock': item.qty_in_stock,
+                    'price': item.price,
+                    'color': item.color,
+                    'size': item.size,
+                    'product_images': product_images,
+                })
+
             product_data = {
                 'id': product['id'],
                 'name': product['name'],
@@ -31,15 +44,7 @@ def product_list(request):
                     'id': product['category__id'],
                     'category_name': product['category__category_name']
                 },
-                'product_images': {f'image{i+1}': {'url': img.url} for i, img in enumerate(ProductImage.objects.filter(product_id=product['id']))},
-                'product_items': [{
-                    'id': item.id,
-                    'SKU': item.SKU,
-                    'qty_in_stock': item.qty_in_stock,
-                    'price': item.price,
-                    'color': item.color,
-                    'size': item.size,
-                } for item in ProductItem.objects.filter(product=product['id'])]  
+                'product_items': product_items,
             }
             product_list.append(product_data)
 
@@ -67,10 +72,12 @@ def create_product(request):
 
             product_images = data.get('product_images', [])
             for image_url in product_images:
-                ProductImage.objects.create(product=product, url=image_url)
+                for item in data['product_items']:
+                    ProductImage.objects.create(product_item=product_item, url=image_url)
+
             product_items = data.get('product_items', [])
             for item in product_items:
-                ProductItem.objects.create(
+                product_item = ProductItem.objects.create(
                     product=product,
                     SKU=item['SKU'],
                     qty_in_stock=item['qty_in_stock'],
@@ -78,6 +85,8 @@ def create_product(request):
                     color=item.get('color', ''),
                     size=item.get('size', '')
                 )
+                for image_url in product_images:
+                    ProductImage.objects.create(product_item=product_item, url=image_url)
 
             return JsonResponse({'message': 'Product created successfully!'}, status=201)
 
@@ -87,6 +96,19 @@ def create_product(request):
 def get_product_by_id(request, product_id):
     if request.method == 'GET':
         product = get_object_or_404(Product, id=product_id)
+        product_items = []
+        for item in product.items.all():
+            product_images = {f'image{i+1}': {'url': image.url} for i, image in enumerate(item.images.all())}
+            product_items.append({
+                'id': item.id,
+                'SKU': item.SKU,
+                'qty_in_stock': item.qty_in_stock,
+                'price': item.price,
+                'color': item.color,
+                'size': item.size,
+                'product_images': product_images,
+            })
+
         product_data = {
             'id': product.id,
             'name': product.name,
@@ -95,15 +117,7 @@ def get_product_by_id(request, product_id):
                 'id': product.category.id,
                 'category_name': product.category.category_name
             },
-            'product_images': {f'image{i+1}': {'url': image.url} for i, image in enumerate(product.images.all())},
-            'product_items': [{
-                'id': item.id,
-                'SKU': item.SKU,
-                'qty_in_stock': item.qty_in_stock,
-                'price': item.price,
-                'color': item.color,
-                'size': item.size,
-            } for item in product.items.all()],
+            'product_items': product_items,
             'is_active': product.is_active,
             'created_at': product.created_at,
             'updated_at': product.updated_at
@@ -158,11 +172,16 @@ def delete_product(request, product_id):
 
 def calculate_product_price(request, product_id):
     product = get_object_or_404(Product, id=product_id)
-    tax_rate = 0.1 
-    total_price = product.price + (product.price * tax_rate)
-    return JsonResponse({
-        'product_id': product.id,
-        'product_name': product.name,
-        'price': product.price,
-        'total_price_with_tax': total_price,
-    })
+    product_items = product.items.all()
+    prices_with_tax = []
+
+    for item in product_items:
+        tax_rate = 0.1
+        total_price = item.price + (item.price * tax_rate)
+        prices_with_tax.append({
+            'product_item_id': item.id,
+            'product_item_SKU': item.SKU,
+            'total_price_with_tax': total_price,
+        })
+
+    return JsonResponse(prices_with_tax, safe=False)

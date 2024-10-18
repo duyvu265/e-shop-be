@@ -1,6 +1,7 @@
 from django.db import models
 from Products.models import Product
 from django.core.exceptions import ValidationError
+
 class ProductItem(models.Model):
     product = models.ForeignKey(Product, related_name='items', on_delete=models.CASCADE)
     SKU = models.CharField(max_length=100, unique=True)
@@ -16,4 +17,10 @@ class ProductItem(models.Model):
             raise ValidationError("Số lượng trong kho không thể nhỏ hơn 0.")
     
     def __str__(self):
-        return self.product.name  
+        return f"{self.product.name} - {self.SKU}" 
+class ProductImage(models.Model):
+    product_item = models.ForeignKey(ProductItem, related_name='images', on_delete=models.CASCADE)  
+    url = models.URLField()
+
+    def __str__(self):
+        return f"{self.product_item.SKU} - Image {self.id}"

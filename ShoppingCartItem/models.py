@@ -1,25 +1,18 @@
 from django.db import models
 from ShoppingCart.models import ShoppingCart
-from ProductsItem.models import ProductItem
-from django.core.exceptions import ValidationError
+
+STATUS_CHOICES = [
+    ('available', 'Có sẵn'),
+    ('out_of_stock', 'Đã hết hàng'),
+    ('preorder', 'Đặt trước'),
+]
 
 class ShoppingCartItem(models.Model):
-    STATUS_CHOICES = [
-        ('available', 'Có sẵn'),
-        ('out_of_stock', 'Đã hết hàng'),
-        ('preorder', 'Đặt trước'),
-    ]
     cart = models.ForeignKey(ShoppingCart, related_name='items', on_delete=models.CASCADE)
-    product_item = models.ForeignKey(ProductItem, related_name='cart_items', on_delete=models.CASCADE)
-    qty = models.PositiveIntegerField()
+    product_id = models.IntegerField() 
+    product_name = models.CharField(max_length=255) 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')  
     notes = models.TextField(blank=True, null=True)  
-
-    def clean(self):
-        if self.qty > self.product_item.qty_in_stock:
-            raise ValidationError("Số lượng trong giỏ hàng không thể lớn hơn số lượng trong kho.")
-
+    qty = models.PositiveIntegerField(default=1)
     def __str__(self):
-     if self.product_item and self.product_item.product:
-        return f"{self.product_item.product.name} - {self.qty} - {self.status}"
-     return "ShoppingCartItem"
+        return f"{self.product_name} - {self.status}"
