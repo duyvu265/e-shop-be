@@ -5,34 +5,45 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from .models import ShoppingCart
 from ShoppingCartItem.models import ShoppingCartItem
-from ProductsItem.models import ProductItem
+from ProductsItem.models import ProductItem,ProductImage
 from SiteUser.models import SiteUser
 from Products.models import Product
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_cart_items(request):
     site_user = get_object_or_404(SiteUser, user=request.user)
     cart = get_object_or_404(ShoppingCart, site_user=site_user)
-
     cart_items = cart.items.all()  
-    items_data = []
+    products_data = []
 
     for item in cart_items:
-      
         product_item = get_object_or_404(ProductItem, id=item.product_id)
-        
-        items_data.append({
-            "product_id": product_item.product.id, 
-            "product_name": product_item.product.name,  
-            "price": product_item.price,  
-            "qty": item.qty,  
-            "color": product_item.color, 
-            "size": product_item.size,  
-            "qty_in_stock": product_item.qty_in_stock,  
-        })
+        product = product_item.product  #
+        existing_product = next((p for p in products_data if p['product_id'] == product.id), None)
+        images = ProductImage.objects.filter(product_item=product_item)
+        image_urls = [image.url for image in images]
 
-    return JsonResponse(items_data, safe=False)
+        product_item_data = {
+            "sku": product_item.SKU,
+            "price": product_item.price,
+            "color": product_item.color,
+            "size": product_item.size,
+            "qty_in_stock": product_item.qty_in_stock,
+            "images": image_urls
+        }
+        if existing_product:
+            existing_product['items'].append(product_item_data)
+        else:
+            products_data.append({
+                "product_id": product.id,
+                "product_name": product.name,
+                "description": product.description,
+                "product_items": [product_item_data]  
+            })
+
+    return JsonResponse(products_data, safe=False)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

@@ -94,6 +94,7 @@ def create_product(request):
             return JsonResponse({'error': 'Invalid JSON format!'}, status=400)
 
 def get_product_by_id(request, product_id):
+    print(product_id)
     if request.method == 'GET':
         product = get_object_or_404(Product, id=product_id)
         product_items = []
