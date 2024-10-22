@@ -17,11 +17,12 @@ def get_cart_items(request):
     cart = get_object_or_404(ShoppingCart, site_user=site_user)
     cart_items = cart.items.all()  
     products_data = []
+    total_price = 0  # Khởi tạo tổng giá trị
+    total_quantity = 0  # Khởi tạo tổng số lượng
 
     for item in cart_items:
         product_item = get_object_or_404(ProductItem, id=item.product_id)
-        product = product_item.product  #
-        existing_product = next((p for p in products_data if p['product_id'] == product.id), None)
+        product = product_item.product  
         images = ProductImage.objects.filter(product_item=product_item)
         image_urls = [image.url for image in images]
 
@@ -31,8 +32,14 @@ def get_cart_items(request):
             "color": product_item.color,
             "size": product_item.size,
             "qty_in_stock": product_item.qty_in_stock,
-            "images": image_urls
+            "images": image_urls,
+            "status": item.status  
         }
+        
+        total_price += product_item.price * item.qty  
+        total_quantity += item.qty  
+
+        existing_product = next((p for p in products_data if p['product_id'] == product.id), None)
         if existing_product:
             existing_product['items'].append(product_item_data)
         else:
@@ -43,7 +50,12 @@ def get_cart_items(request):
                 "product_items": [product_item_data]  
             })
 
-    return JsonResponse(products_data, safe=False)
+    return JsonResponse({
+        "products": products_data,
+        "total_price": total_price, 
+        "total_quantity": total_quantity 
+    }, safe=False)
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

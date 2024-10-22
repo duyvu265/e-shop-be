@@ -1,13 +1,19 @@
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from .models import Product
-from ProductsItem.models import ProductItem,ProductImage
+from ProductsItem.models import ProductItem, ProductImage
 from ProductsCategory.models import ProductCategory
 import json
+import logging
+
+
+logging.basicConfig(level=logging.DEBUG)
 
 def product_list(request):
     if request.method == 'GET':
-        products = Product.objects.prefetch_related('items__images').values(
+        products = Product.objects.prefetch_related(
+            'items__images'
+        ).values(
             'id',
             'name',
             'description',
@@ -21,8 +27,12 @@ def product_list(request):
         product_list = []
         for product in products:
             product_items = []
-            for item in ProductItem.objects.filter(product_id=product['id']):
-                product_images = {f'image{i+1}': {'url': img.url} for i, img in enumerate(item.images.all())}
+            items = ProductItem.objects.filter(product_id=product['id']) 
+            for item in items:
+                product_images = {}
+                if item.images.exists():
+                    product_images['image1'] = {'url': item.images.first().url}
+
                 product_items.append({
                     'id': item.id,
                     'SKU': item.SKU,
@@ -52,6 +62,7 @@ def product_list(request):
 
     return JsonResponse({'error': 'Invalid request method!'}, status=400)
 
+
 def create_product(request):
     if request.method == 'POST':
         required_fields = ['category_id', 'name', 'description', 'product_images', 'product_items']
@@ -70,12 +81,10 @@ def create_product(request):
             product = Product(category=category, name=name, description=description)
             product.save()
 
-            product_images = data.get('product_images', [])
-            for image_url in product_images:
-                for item in data['product_items']:
-                    ProductImage.objects.create(product_item=product_item, url=image_url)
-
             product_items = data.get('product_items', [])
+            product_images = data.get('product_images', [])
+
+            created_images = []
             for item in product_items:
                 product_item = ProductItem.objects.create(
                     product=product,
@@ -85,16 +94,20 @@ def create_product(request):
                     color=item.get('color', ''),
                     size=item.get('size', '')
                 )
+                # Tạo hình ảnh cho sản phẩm
                 for image_url in product_images:
-                    ProductImage.objects.create(product_item=product_item, url=image_url)
+                    created_images.append(ProductImage(product_item=product_item, url=image_url))
+
+            # Bulk create images
+            ProductImage.objects.bulk_create(created_images)
 
             return JsonResponse({'message': 'Product created successfully!'}, status=201)
 
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format!'}, status=400)
 
+
 def get_product_by_id(request, product_id):
-    print(product_id)
     if request.method == 'GET':
         product = get_object_or_404(Product, id=product_id)
         product_items = []
@@ -126,6 +139,7 @@ def get_product_by_id(request, product_id):
         return JsonResponse(product_data, status=200)
     
     return JsonResponse({'error': 'Invalid request method!'}, status=400)
+
 
 def update_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
@@ -162,6 +176,7 @@ def update_product(request, product_id):
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format!'}, status=400)
 
+
 def delete_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     if request.method == 'DELETE':
@@ -170,6 +185,7 @@ def delete_product(request, product_id):
         return JsonResponse({'message': 'Product deleted successfully!'}, status=200)
     
     return JsonResponse({'error': 'Invalid request method!'}, status=400)
+
 
 def calculate_product_price(request, product_id):
     product = get_object_or_404(Product, id=product_id)
