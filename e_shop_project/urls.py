@@ -18,6 +18,9 @@ from django.contrib import admin
 from django.urls import path,include
 from SiteUser.views import login,create_site_user,google_login
 from ProductsCategory.views import category_list
+from rest_framework_simplejwt.views import (
+    TokenRefreshView,
+)
 
 
 urlpatterns = [
@@ -29,4 +32,6 @@ urlpatterns = [
     path('categories/', category_list), 
     path('user/', include('SiteUser.urls')), 
     path('cart/', include('ShoppingCart.urls')), 
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), 
+    
 ]

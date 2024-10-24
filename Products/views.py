@@ -26,22 +26,11 @@ def product_list(request):
 
         product_list = []
         for product in products:
-            product_items = []
-            items = ProductItem.objects.filter(product_id=product['id']) 
+            image_urls = []
+            items = ProductItem.objects.filter(product_id=product['id'])
             for item in items:
-                product_images = {}
                 if item.images.exists():
-                    product_images['image1'] = {'url': item.images.first().url}
-
-                product_items.append({
-                    'id': item.id,
-                    'SKU': item.SKU,
-                    'qty_in_stock': item.qty_in_stock,
-                    'price': item.price,
-                    'color': item.color,
-                    'size': item.size,
-                    'product_images': product_images,
-                })
+                    image_urls.extend([img.url for img in item.images.all()])
 
             product_data = {
                 'id': product['id'],
@@ -54,7 +43,7 @@ def product_list(request):
                     'id': product['category__id'],
                     'category_name': product['category__category_name']
                 },
-                'product_items': product_items,
+                'images': image_urls, 
             }
             product_list.append(product_data)
 
@@ -94,11 +83,8 @@ def create_product(request):
                     color=item.get('color', ''),
                     size=item.get('size', '')
                 )
-                # Tạo hình ảnh cho sản phẩm
                 for image_url in product_images:
                     created_images.append(ProductImage(product_item=product_item, url=image_url))
-
-            # Bulk create images
             ProductImage.objects.bulk_create(created_images)
 
             return JsonResponse({'message': 'Product created successfully!'}, status=201)

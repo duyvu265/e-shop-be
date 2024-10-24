@@ -8,10 +8,14 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
+from ShoppingCart.models import ShoppingCart
+from ProductsItem.models import ProductItem,ProductImage
 import logging
 import requests
 
 logging.basicConfig(level=logging.DEBUG)
+
+from rest_framework_simplejwt.tokens import RefreshToken
 
 @csrf_exempt
 def google_login(request):
@@ -30,47 +34,76 @@ def google_login(request):
                 email = user_info['email']
                 username = user_info['name']
                 avatar = user_info.get('picture')
-                phone_number = user_info.get('phone_number', None)  
+                phone_number = user_info.get('phone_number', None)
                 site_user = SiteUser.objects.filter(user__email=email).first()
 
                 if site_user:
-                    site_user.avatar = avatar  
-                    site_user.phone_number = phone_number  
+                    site_user.avatar = avatar
+                    site_user.phone_number = phone_number
                     site_user.save()
+
+                    refresh = RefreshToken.for_user(site_user.user)
 
                     liked_products = site_user.liked_products.all()
                     liked_products_list = [{
-                     'id': liked_product.product.id,
-                     } for liked_product in liked_products]
+                        'id': liked_product.product.id,
+                    } for liked_product in liked_products]
+
+                    cart = ShoppingCart.objects.filter(site_user=site_user).first()
+                    cart_items = []
+                    if cart:
+                        for item in cart.items.all():
+                            product_item = get_object_or_404(ProductItem, id=item.product_id)
+                            product = get_object_or_404(Product, id=item.product_id)
+                            cart_items.append({
+                                'product_id': item.product_id,
+                                'product_name': item.product_name,
+                                'status': item.status,
+                                'qty': item.qty,
+                                'notes': item.notes,
+                                'image': [image.url for image in product_item.images.all()],
+                                'description': product.description,  
+                                'sku': product_item.SKU,  
+                                'size': product_item.size,  
+                                'qty_in_stock': product_item.qty_in_stock ,
+                                'price': product_item.price ,
+                            })
 
                     return JsonResponse({
                         'message': 'User exists, token saved!',
-                        'user_id': site_user.id,
-                        'userInfo': {  
+                        'refresh': str(refresh),
+                        'access': str(refresh.access_token),
+                        'userInfo': {
                             'id': site_user.id,
                             'email': email,
                             'username': username,
                             'avatar': avatar,
                             'phone_number': phone_number,
                             'liked_products': liked_products_list,
+                            'cart_items': cart_items
                         }
                     }, status=200)
                 else:
                     user = User.objects.create_user(username=username, email=email)
-                    user.set_unusable_password()  
+                    user.set_unusable_password()
                     user.save()
                     site_user = SiteUser(user=user, avatar=avatar, phone_number=phone_number)
                     site_user.save()
+
+                    refresh = RefreshToken.for_user(site_user.user)
+
                     return JsonResponse({
                         'message': 'New user created!',
-                        'user_id': site_user.id,
-                        'userInfo': {  
+                        'refresh': str(refresh),
+                        'access': str(refresh.access_token),
+                        'userInfo': {
                             'id': site_user.id,
                             'email': email,
                             'username': username,
                             'avatar': avatar,
                             'phone_number': phone_number,
-                            'liked_products': [],  
+                            'liked_products': [],
+                            'cart_items': []
                         }
                     }, status=201)
 
@@ -82,6 +115,7 @@ def google_login(request):
             return JsonResponse({'error': 'An unexpected error occurred!'}, status=500)
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
+
 
 
 @csrf_exempt
@@ -103,26 +137,48 @@ def login(request):
 
             liked_products = site_user.liked_products.all()
             liked_products_list = [{
-               'id': liked_product.product.id,
-} for liked_product in liked_products]
+                'id': liked_product.product.id,
+            } for liked_product in liked_products]
+
+            cart = ShoppingCart.objects.filter(site_user=site_user).first()
+            cart_items = []
+            if cart:
+                for item in cart.items.all():
+                    product_item = get_object_or_404(ProductItem, id=item.product_id)    
+                    product = get_object_or_404(Product, id=item.product_id)
+                    cart_items.append({
+                        'product_id': item.product_id,
+                        'product_name': item.product_name,
+                        'status': item.status,
+                        'qty': item.qty,
+                        'notes': item.notes,
+                        'image': [image.url for image in product_item.images.all()],
+                        'description': product.description,  
+                        'sku': product_item.SKU, 
+                        'size': product_item.size, 
+                        'qty_in_stock': product_item.qty_in_stock  ,
+                        'price': product_item.price ,
+                    })
 
             return JsonResponse({
                 'message': 'Login successful!',
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
-                'userInfo': {  
+                'userInfo': {
                     'id': site_user.id,
                     'email': user.email,
                     'username': user.username,
                     'avatar': site_user.avatar.url if site_user.avatar else None,
                     'phone_number': site_user.phone_number,
                     'liked_products': liked_products_list,
+                    'cart_items': cart_items  
                 }
             }, status=200)
         else:
             return JsonResponse({'error': 'Invalid credentials!'}, status=401)
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
+
 
 
 @csrf_exempt
