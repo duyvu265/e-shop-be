@@ -34,7 +34,8 @@ SECRET_KEY = 'django-insecure-8d56wi#5k758)k&hc_ncj!6x(@g!jsy7o&(_&y+c#)ajs78si$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', ]
+
 
 
 
@@ -87,7 +88,7 @@ MIDDLEWARE = [
 ]
 CORS_ALLOW_ALL_ORIGINS = True
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:5173',  
+    'http://localhost:5173',   'http://127.0.0.1'
 ]
 
 ROOT_URLCONF = 'e_shop_project.urls'

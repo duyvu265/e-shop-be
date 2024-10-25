@@ -87,7 +87,7 @@ def google_login(request):
                     user = User.objects.create_user(username=username, email=email)
                     user.set_unusable_password()
                     user.save()
-                    site_user = SiteUser(user=user, avatar=avatar, phone_number=phone_number)
+                    site_user = SiteUser(user=user, avatar=avatar, phone_number=phone_number ,user_type='customer') 
                     site_user.save()
 
                     refresh = RefreshToken.for_user(site_user.user)
@@ -171,6 +171,7 @@ def login(request):
                     'avatar': site_user.avatar.url if site_user.avatar else None,
                     'phone_number': site_user.phone_number,
                     'liked_products': liked_products_list,
+                    'user_type':site_user.user_type,
                     'cart_items': cart_items  
                 }
             }, status=200)
@@ -270,7 +271,7 @@ def create_site_user(request):
         phone_number = data.get('phone_number')
 
         try:
-            user = User.objects.create_user(username=username, password=password, email=email)
+            user = User.objects.create_user(username=username, password=password, email=email ,user_type='customer')
             site_user = SiteUser(user=user, avatar=avatar, phone_number=phone_number)
             site_user.save()
             return JsonResponse({'message': 'SiteUser created successfully!'}, status=201)

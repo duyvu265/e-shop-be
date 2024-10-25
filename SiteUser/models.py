@@ -1,24 +1,34 @@
 from django.db import models
 from django.contrib.auth.models import User
 from Products.models import Product
+
 class SiteUser(models.Model):
+    USER_TYPE_CHOICES = [
+        ('admin', 'Admin'),
+        ('super_admin', 'Super Admin'),
+        ('customer', 'Customer'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     phone_number = models.CharField(max_length=15, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
+    user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='customer')
 
     def __str__(self):
         return self.user.username
+
 class LikedProduct(models.Model):
     user = models.ForeignKey(SiteUser, on_delete=models.CASCADE, related_name='liked_products')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     liked_at = models.DateTimeField(auto_now_add=True)
+
     class Meta:
         unique_together = ('user', 'product')
+
     def __str__(self):
         return f"{self.user} likes {self.product}"
-
 
 class Address(models.Model):
     site_user = models.ForeignKey(SiteUser, on_delete=models.CASCADE, related_name='addresses')
@@ -33,11 +43,10 @@ class Address(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['site_user'], condition=models.Q(is_primary=True), name='unique_primary_address_per_user')
-        ]  
+        ]
 
     def __str__(self):
         return f"{self.street}, {self.city}, {self.state}, {self.country}"
-
 
 class UserPaymentMethod(models.Model):
     user = models.ForeignKey(SiteUser, on_delete=models.CASCADE)
