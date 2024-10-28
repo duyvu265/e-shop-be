@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'ShoppingCartItem.apps.ShoppingCartItemConfig', 
     'SiteUser.apps.SiteUserConfig',        
     'TransactionHistory.apps.TransactionHistoryConfig', 
+    'Banner.apps.BannerConfig', 
     'rest_framework',
     'corsheaders'
 ]
