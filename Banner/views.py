@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
-from rest_framework.decorators import api_view,permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status as http_status
 from .models import Banner
@@ -14,6 +14,7 @@ def banner_list(request):
     return Response(serializer.data, status=http_status.HTTP_200_OK)
 
 @api_view(['POST'])
+@permission_classes([IsAdminUser])  
 def create_banner(request):
     serializer = BannerSerializer(data=request.data)
     if serializer.is_valid():
@@ -22,12 +23,14 @@ def create_banner(request):
     return Response(serializer.errors, status=http_status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_banner_by_id(request, banner_id):
     banner = get_object_or_404(Banner, id=banner_id)
     serializer = BannerSerializer(banner)
     return Response(serializer.data, status=http_status.HTTP_200_OK)
 
 @api_view(['PUT'])
+@permission_classes([IsAdminUser])  
 def update_banner(request, banner_id):
     banner = get_object_or_404(Banner, id=banner_id)
     serializer = BannerSerializer(banner, data=request.data)
@@ -37,6 +40,7 @@ def update_banner(request, banner_id):
     return Response(serializer.errors, status=http_status.HTTP_400_BAD_REQUEST)
 
 @api_view(['PATCH'])
+@permission_classes([IsAdminUser])  
 def update_banner_status(request, banner_id):
     banner = get_object_or_404(Banner, id=banner_id)
     new_status = request.data.get('status')
@@ -48,6 +52,7 @@ def update_banner_status(request, banner_id):
     return Response({'message': 'Banner status updated successfully!', 'status': banner.status}, status=http_status.HTTP_200_OK)
 
 @api_view(['DELETE'])
+@permission_classes([IsAdminUser])  
 def delete_banner(request, banner_id):
     banner = get_object_or_404(Banner, id=banner_id)
     banner.delete()  

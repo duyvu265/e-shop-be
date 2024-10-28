@@ -30,13 +30,12 @@ urlpatterns = [
     path('google-login/', google_login, name='google_login'),
     path('register/', create_site_user ,name="register"),
     path('products/', include('Products.urls')), 
-    path('banners/', include('Banner.urls')), 
     path('v1/admin/login/', admin_login,name='admin_login'), 
     path('li-banners/', banner_list, name='banner_list'), 
     path('categories/', category_list), 
     path('user/', include('SiteUser.urls')), 
     path('cart/', include('ShoppingCart.urls')), 
-    path('v1/admin/banner/', include('Banner.urls')), 
+    path('banners/', include('Banner.urls')), 
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), 
     
 ]
