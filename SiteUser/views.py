@@ -116,6 +116,50 @@ def google_login(request):
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 
+@csrf_exempt
+def admin_login(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        email = data.get('email')
+        password = data.get('password')
+
+        User = get_user_model()  
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'Invalid credentials!'}, status=401)
+
+        if user.check_password(password):
+            site_user = SiteUser.objects.get(user=user)
+
+            # Kiểm tra user_type
+            if site_user.user_type != 'admin':
+                return JsonResponse({'error': 'Access denied! Admins only.'}, status=403)
+
+            refresh = RefreshToken.for_user(user)
+
+            liked_products = site_user.liked_products.all()
+            liked_products_list = [{
+                'id': liked_product.product.id,
+            } for liked_product in liked_products]
+
+            return JsonResponse({
+                'message': 'Login successful!',
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                'userInfo': {
+                    'id': site_user.id,
+                    'email': user.email,
+                    'username': user.username,
+                    'avatar': site_user.avatar.url if site_user.avatar else None,
+                    'user_type': site_user.user_type,
+                }
+            }, status=200)
+        else:
+            return JsonResponse({'error': 'Invalid credentials!'}, status=401)
+
+    return JsonResponse({'error': 'Invalid request!'}, status=400)
+
 
 
 @csrf_exempt

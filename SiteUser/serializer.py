@@ -12,4 +12,4 @@ class SiteUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SiteUser
-        fields = ['user', 'avatar', 'phone_number','liked_products']
+        fields = ['user', 'avatar', 'phone_number','liked_products','user_type']
