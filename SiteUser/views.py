@@ -9,9 +9,11 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 from ShoppingCart.models import ShoppingCart
-from ProductsItem.models import ProductItem,ProductImage
+from ProductsItem.models import ProductItem
 import logging
 import requests
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAdminUser,IsAuthenticated
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -227,6 +229,7 @@ def login(request):
 
 
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def like_product(request):
     if request.method == 'POST':
         try:
@@ -250,6 +253,7 @@ def like_product(request):
 
 
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def get_liked_products(request, user_id):
     if request.method == 'GET':
         site_user = get_object_or_404(SiteUser, id=user_id)
@@ -267,6 +271,7 @@ def get_liked_products(request, user_id):
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 @csrf_exempt
+@permission_classes([IsAdminUser])  
 def get_users_list(request):
     if request.method == 'GET':
         users = SiteUser.objects.all()
@@ -288,6 +293,7 @@ def get_users_list(request):
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def get_user_by_id(request, id):
     if request.method == 'GET':
         user = get_object_or_404(SiteUser, id=id)
@@ -327,6 +333,7 @@ def create_site_user(request):
 
 
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def update_site_user(request, id):
     if request.method == 'PUT':
         data = json.loads(request.body)
@@ -371,6 +378,7 @@ def delete_site_user(request, id):
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def get_addresses_list(request, user_id):
     if request.method == 'GET':
         user = get_object_or_404(SiteUser, id=user_id)
@@ -389,6 +397,7 @@ def get_addresses_list(request, user_id):
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def update_address(request, user_id, address_id):
     if request.method == 'PUT':
         data = json.loads(request.body)
@@ -404,6 +413,7 @@ def update_address(request, user_id, address_id):
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def delete_address(request, user_id, address_id):
     if request.method == 'DELETE':
         address = get_object_or_404(Address, id=address_id, site_user_id=user_id)
@@ -413,6 +423,7 @@ def delete_address(request, user_id, address_id):
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def get_payment_methods_list(request, user_id):
     if request.method == 'GET':
         user = get_object_or_404(SiteUser, id=user_id)
@@ -430,6 +441,7 @@ def get_payment_methods_list(request, user_id):
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def update_payment_method(request, user_id, payment_method_id):
     if request.method == 'PUT':
         data = json.loads(request.body)
@@ -444,6 +456,7 @@ def update_payment_method(request, user_id, payment_method_id):
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def delete_payment_method(request, user_id, payment_method_id):
     if request.method == 'DELETE':
         payment_method = get_object_or_404(UserPaymentMethod, id=payment_method_id, user_id=user_id)
