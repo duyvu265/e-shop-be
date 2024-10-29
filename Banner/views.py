@@ -5,7 +5,9 @@ from rest_framework.response import Response
 from rest_framework import status as http_status
 from .models import Banner
 from .serializers import BannerSerializer
+import logging
 
+logging.basicConfig(level=logging.DEBUG)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def banner_list(request):

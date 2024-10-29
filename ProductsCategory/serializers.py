@@ -1,9 +1,8 @@
+# serializers.py
 from rest_framework import serializers
-from ProductsCategory.models import ProductCategory
+from .models import ProductCategory
 
 class ProductCategorySerializer(serializers.ModelSerializer):
-    subcategories = serializers.StringRelatedField(many=True, required=False)  
-
     class Meta:
         model = ProductCategory
-        fields = ['id', 'category_name', 'parent_category', 'subcategories']  
+        fields = ['id', 'parent_category', 'category_name', 'image_url','status']

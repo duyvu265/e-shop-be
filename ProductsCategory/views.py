@@ -1,35 +1,53 @@
-from django.http import JsonResponse
+# views.py
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
 from .models import ProductCategory
+from .serializers import ProductCategorySerializer
 
+@api_view(['GET'])
 def category_list(request):
-    if request.method == 'GET':
-        categories = ProductCategory.objects.prefetch_related('subcategories').all()
+    categories = ProductCategory.objects.all()
+    serializer = ProductCategorySerializer(categories, many=True)
+    return Response(serializer.data)
 
-        category_list = []
-        for category in categories:
-            subcategories = [
-                {
-                    'id': subcategory.id,
-                    'category_name': subcategory.category_name,
-                    'image_url': subcategory.image_url  
-                }
-                for subcategory in category.subcategories.all()
-            ]
+@api_view(['POST'])
+def category_create(request):
+    serializer = ProductCategorySerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            category_data = {
-                'id': category.id,
-                'category_name': category.category_name,
-                'image_url': category.image_url,  
-                'parent_category': {
-                    'id': category.parent_category.id,
-                    'category_name': category.parent_category.category_name,
-                    'image_url': category.parent_category.image_url  
-                } if category.parent_category else None,
-                'subcategories': subcategories
-            }
+@api_view(['GET'])
+def category_detail(request, pk):
+    try:
+        category = ProductCategory.objects.get(pk=pk)
+    except ProductCategory.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
-            category_list.append(category_data)
+    serializer = ProductCategorySerializer(category)
+    return Response(serializer.data)
 
-        return JsonResponse(category_list, safe=False)
+@api_view(['PUT'])
+def category_update(request, pk):
+    try:
+        category = ProductCategory.objects.get(pk=pk)
+    except ProductCategory.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
-    return JsonResponse({'error': 'Invalid request method!'}, status=400)
+    serializer = ProductCategorySerializer(category, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+def category_delete(request, pk):
+    try:
+        category = ProductCategory.objects.get(pk=pk)
+    except ProductCategory.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    category.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)

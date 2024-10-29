@@ -18,7 +18,6 @@ from django.contrib import admin
 from django.urls import path,include
 from SiteUser.views import login,create_site_user,google_login,admin_login
 from Banner.views import banner_list
-from ProductsCategory.views import category_list
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
@@ -31,8 +30,7 @@ urlpatterns = [
     path('register/', create_site_user ,name="register"),
     path('products/', include('Products.urls')), 
     path('v1/admin/login/', admin_login,name='admin_login'), 
-    path('li-banners/', banner_list, name='banner_list'), 
-    path('categories/', category_list), 
+    path('categories/', include('ProductsCategory.urls')), 
     path('user/', include('SiteUser.urls')), 
     path('cart/', include('ShoppingCart.urls')), 
     path('banners/', include('Banner.urls')), 

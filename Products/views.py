@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from .models import Product
 from ProductsItem.models import ProductItem, ProductImage
 from ProductsCategory.models import ProductCategory
+from django.db.models import Min, Max
 import json
 import logging
 
@@ -21,13 +22,16 @@ def product_list(request):
             'created_at',
             'updated_at',
             'category__id',
-            'category__category_name'
+            'category__category_name',
+            'brand',
+            'title'
         )
 
         product_list = []
         for product in products:
             image_urls = []
             items = ProductItem.objects.filter(product_id=product['id'])
+            price = items.aggregate(min_price=Min('price'))['min_price'] if items.exists() else None
             for item in items:
                 if item.images.exists():
                     image_urls.extend([img.url for img in item.images.all()])
@@ -39,6 +43,9 @@ def product_list(request):
                 'is_active': product['is_active'],
                 'created_at': product['created_at'],
                 'updated_at': product['updated_at'],
+                'brand': product['brand'],
+                'price': price,
+                'title': product['title'],
                 'category': {
                     'id': product['category__id'],
                     'category_name': product['category__category_name']
@@ -54,7 +61,7 @@ def product_list(request):
 
 def create_product(request):
     if request.method == 'POST':
-        required_fields = ['category_id', 'name', 'description', 'product_images', 'product_items']
+        required_fields = ['category_id', 'name', 'description', 'product_images', 'product_items','brand','title']
         try:
             data = json.loads(request.body)
 
@@ -65,9 +72,11 @@ def create_product(request):
             category_id = data['category_id']
             name = data['name']
             description = data['description']
+            brand = data['brand']
+            title = data['title']
             category = get_object_or_404(ProductCategory, id=category_id)
 
-            product = Product(category=category, name=name, description=description)
+            product = Product(category=category, name=name, description=description,brand=brand, title=title)
             product.save()
 
             product_items = data.get('product_items', [])
@@ -113,6 +122,8 @@ def get_product_by_id(request, product_id):
             'id': product.id,
             'name': product.name,
             'description': product.description,
+            'brand': product.brand,
+            'title': product.title,
             'category': {
                 'id': product.category.id,
                 'category_name': product.category.category_name
@@ -130,7 +141,7 @@ def get_product_by_id(request, product_id):
 def update_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     if request.method == 'PUT':
-        required_fields = ['name', 'description', 'category_id', 'product_items']
+        required_fields = ['name', 'description', 'category_id', 'product_items','brand',"title"]
         try:
             data = json.loads(request.body)
 
