@@ -17,8 +17,8 @@ def get_cart_items(request):
     cart = get_object_or_404(ShoppingCart, site_user=site_user)
     cart_items = cart.items.all()  
     products_data = []
-    total_price = 0  # Khởi tạo tổng giá trị
-    total_quantity = 0  # Khởi tạo tổng số lượng
+    total_price = 0  
+    total_quantity = 0
 
     for item in cart_items:
         product_item = get_object_or_404(ProductItem, id=item.product_id)

@@ -33,6 +33,7 @@ urlpatterns = [
     path('categories/', include('ProductsCategory.urls')), 
     path('user/', include('SiteUser.urls')), 
     path('cart/', include('ShoppingCart.urls')), 
+    path('chat/', include('Chat.urls')), 
     path('banners/', include('Banner.urls')), 
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), 
     

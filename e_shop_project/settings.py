@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    'channels',
     'Chat.apps.ChatConfig',               
     'Orders.apps.OrdersConfig',             
     'OrdersLine.apps.OrdersLineConfig',    

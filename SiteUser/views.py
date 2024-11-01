@@ -134,7 +134,6 @@ def admin_login(request):
         if user.check_password(password):
             site_user = SiteUser.objects.get(user=user)
 
-            # Kiểm tra user_type
             if site_user.user_type != 'admin':
                 return JsonResponse({'error': 'Access denied! Admins only.'}, status=403)
 
