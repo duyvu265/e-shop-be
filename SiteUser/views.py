@@ -274,7 +274,7 @@ def get_liked_products(request, user_id):
 @permission_classes([IsAdminUser])  
 def get_users_list(request):
     if request.method == 'GET':
-        users = SiteUser.objects.all()
+        users = SiteUser.objects.filter(user_type='staff') 
         users_list = []
 
         for user in users:
@@ -286,11 +286,134 @@ def get_users_list(request):
                 'phone_number': user.phone_number,
                 'created_at': user.created_at,
                 'updated_at': user.updated_at,
+                'user_type':user.user_type,
             })
 
         return JsonResponse({'users': users_list}, status=200)
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
+
+@csrf_exempt
+@permission_classes([IsAdminUser]) 
+def get_customers(request):
+    if request.method == 'GET':
+        customers = SiteUser.objects.filter(user_type='customer') 
+        customers_list = []
+
+        for customer in customers:
+            customers_list.append({
+                'id': customer.id,
+                'username': customer.user.username,
+                'email': customer.user.email,
+                'avatar': customer.avatar.url if customer.avatar else None,
+                'phone_number': customer.phone_number,
+                'created_at': customer.created_at,
+                'updated_at': customer.updated_at,
+                'user_type': customer.user_type,
+            })
+
+        return JsonResponse({'customers': customers_list}, status=200)
+
+    return JsonResponse({'error': 'Invalid request!'}, status=400)
+@csrf_exempt
+@permission_classes([IsAdminUser])
+def get_staff_user_by_id(request, id):
+    if request.method == 'GET':
+        user = get_object_or_404(SiteUser, id=id, user_type='staff')
+        user_data = {
+            'id': user.id,
+            'username': user.user.username,
+            'email': user.user.email,
+            'avatar': user.avatar.url if user.avatar else None,
+            'phone_number': user.phone_number,
+            'created_at': user.created_at,
+            'updated_at': user.updated_at,
+            'user_type': user.user_type,
+        }
+        return JsonResponse(user_data, status=200)
+
+    return JsonResponse({'error': 'Invalid request!'}, status=400)
+
+
+@csrf_exempt
+@permission_classes([IsAdminUser])
+def get_customer_user_by_id(request, id):
+    if request.method == 'GET':
+        user = get_object_or_404(SiteUser, id=id, user_type='customer')
+        user_data = {
+            'id': user.id,
+            'username': user.user.username,
+            'email': user.user.email,
+            'avatar': user.avatar.url if user.avatar else None,
+            'phone_number': user.phone_number,
+            'created_at': user.created_at,
+            'updated_at': user.updated_at,
+            'user_type': user.user_type,
+        }
+        return JsonResponse(user_data, status=200)
+
+    return JsonResponse({'error': 'Invalid request!'}, status=400)
+
+
+@csrf_exempt
+@permission_classes([IsAuthenticated])
+def update_staff_user(request, id):
+    if request.method == 'PUT':
+        data = json.loads(request.body)
+        try:
+            site_user = get_object_or_404(SiteUser, id=id, user_type='staff')
+            if 'avatar' in data:
+                site_user.avatar = data['avatar']
+            if 'phone_number' in data:
+                site_user.phone_number = data['phone_number']
+            auth_user = site_user.user
+            if 'username' in data:
+                new_username = data['username']
+                if User.objects.exclude(id=auth_user.id).filter(username=new_username).exists():
+                    return JsonResponse({'error': 'Username already taken!'}, status=400)
+                auth_user.username = new_username
+            if 'email' in data:
+                auth_user.email = data['email']
+            auth_user.save()
+            site_user.save()
+
+            return JsonResponse({'message': 'Staff user updated successfully!'}, status=200)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Invalid request!'}, status=400)
+
+
+@csrf_exempt
+@permission_classes([IsAuthenticated])
+def update_customer_user(request, id):
+    if request.method == 'PUT':
+        data = json.loads(request.body)
+        try:
+            site_user = get_object_or_404(SiteUser, id=id, user_type='customer')
+            if 'avatar' in data:
+                site_user.avatar = data['avatar']
+            if 'phone_number' in data:
+                site_user.phone_number = data['phone_number']
+            auth_user = site_user.user
+            if 'username' in data:
+                new_username = data['username']
+                if User.objects.exclude(id=auth_user.id).filter(username=new_username).exists():
+                    return JsonResponse({'error': 'Username already taken!'}, status=400)
+                auth_user.username = new_username
+            if 'email' in data:
+                auth_user.email = data['email']
+            auth_user.save()
+            site_user.save()
+
+            return JsonResponse({'message': 'Customer user updated successfully!'}, status=200)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Invalid request!'}, status=400)
+
 
 @csrf_exempt
 @permission_classes([IsAuthenticated])

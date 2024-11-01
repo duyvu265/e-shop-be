@@ -7,6 +7,8 @@ class SiteUser(models.Model):
         ('admin', 'Admin'),
         ('super_admin', 'Super Admin'),
         ('customer', 'Customer'),
+        ('manager', 'manager'),
+         ('staff', 'Staff'),
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
