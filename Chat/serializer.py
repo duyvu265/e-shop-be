@@ -1,8 +1,18 @@
 from rest_framework import serializers
-from .models import Chat
+from .models import ChatSession, Message
+from SiteUser.models import SiteUser
 
-class ChatSerializer(serializers.ModelSerializer):
+class ChatSessionSerializer(serializers.ModelSerializer):
+    participants = serializers.PrimaryKeyRelatedField(queryset=SiteUser.objects.all(), many=True)
+
     class Meta:
-        model = Chat
-        fields = ['id', 'customer', 'seller', 'message', 'timestamp', 'is_read', 'attachments']
-        read_only_fields = ['timestamp', 'customer']
+        model = ChatSession
+        fields = ['id', 'participants', 'created_at']
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender = serializers.PrimaryKeyRelatedField(queryset=SiteUser.objects.all())
+    chat_session = serializers.PrimaryKeyRelatedField(queryset=ChatSession.objects.all())
+
+    class Meta:
+        model = Message
+        fields = ['id', 'chat_session', 'sender', 'message', 'timestamp', 'is_read', 'attachments']

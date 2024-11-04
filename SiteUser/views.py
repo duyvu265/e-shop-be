@@ -177,8 +177,13 @@ def login(request):
             return JsonResponse({'error': 'Invalid credentials!'}, status=401)
 
         if user.check_password(password):
-            refresh = RefreshToken.for_user(user)
             site_user = SiteUser.objects.get(user=user)
+
+            # Kiểm tra nếu tài khoản là admin
+            if site_user.user_type == 'admin':
+                return JsonResponse({'error': 'Admin accounts are not allowed to login here!'}, status=403)
+
+            refresh = RefreshToken.for_user(user)
 
             liked_products = site_user.liked_products.all()
             liked_products_list = [{
@@ -201,8 +206,8 @@ def login(request):
                         'description': product.description,  
                         'sku': product_item.SKU, 
                         'size': product_item.size, 
-                        'qty_in_stock': product_item.qty_in_stock  ,
-                        'price': product_item.price ,
+                        'qty_in_stock': product_item.qty_in_stock,
+                        'price': product_item.price,
                     })
 
             return JsonResponse({
@@ -216,7 +221,7 @@ def login(request):
                     'avatar': site_user.avatar.url if site_user.avatar else None,
                     'phone_number': site_user.phone_number,
                     'liked_products': liked_products_list,
-                    'user_type':site_user.user_type,
+                    'user_type': site_user.user_type,
                     'cart_items': cart_items  
                 }
             }, status=200)

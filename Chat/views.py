@@ -1,35 +1,62 @@
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from .models import Chat
-from .serializer import ChatSerializer
+from rest_framework.response import Response
+from .models import ChatSession, Message
+from .serializer import ChatSessionSerializer, MessageSerializer
+from django.shortcuts import get_object_or_404
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
-def get_chats(request):
-    user = request.user
-   
-    chats = Chat.objects.filter(customer=user) | Chat.objects.filter(seller=user)
-    serializer = ChatSerializer(chats, many=True)
-    return Response(serializer.data)
+def chat_session_list(request):
+    if request.method == 'GET':
+        chats = ChatSession.objects.filter(participants=request.user.siteuser)
+        serializer = ChatSessionSerializer(chats, many=True)
+        return Response(serializer.data)
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def send_message(request):
-    serializer = ChatSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save(customer=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == 'POST':
+        serializer = ChatSessionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['PATCH'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
-def mark_message_as_read(request, chat_id):
-    try:
-        chat = Chat.objects.get(id=chat_id)
-        chat.is_read = True
-        chat.save()
-        return Response({'message': 'Message marked as read'}, status=status.HTTP_200_OK)
-    except Chat.DoesNotExist:
-        return Response({'error': 'Chat not found'}, status=status.HTTP_404_NOT_FOUND)
+def message_list_create(request, chat_session_id):
+    chat_session = get_object_or_404(ChatSession, id=chat_session_id)
+
+    if request.method == 'GET':
+        messages = Message.objects.filter(chat_session=chat_session)
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        data = request.data.copy()
+        data['chat_session'] = chat_session.id
+        data['sender'] = request.user.siteuser.id
+        serializer = MessageSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def chat_session_detail(request, pk):
+    chat_session = get_object_or_404(ChatSession, pk=pk)
+
+    if request.method == 'GET':
+        serializer = ChatSessionSerializer(chat_session)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = ChatSessionSerializer(chat_session, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        chat_session.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
