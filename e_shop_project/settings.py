@@ -94,6 +94,16 @@ CSRF_TRUSTED_ORIGINS = [
 
 ROOT_URLCONF = 'e_shop_project.urls'
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
+
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -112,6 +122,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'e_shop_project.wsgi.application'
 
+ASGI_APPLICATION = 'e_shop_project.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
