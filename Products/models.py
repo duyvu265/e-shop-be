@@ -10,6 +10,7 @@ class Product(models.Model):
     is_active = models.BooleanField(default=True)
     brand=models.CharField(max_length=255)
     title=models.CharField(max_length=255)
+    image_url = models.URLField()
     
 
     def __str__(self):

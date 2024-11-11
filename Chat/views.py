@@ -17,7 +17,8 @@ def chat_session_list(request):
     elif request.method == 'POST':
         serializer = ChatSessionSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            chat_session = serializer.save()
+            chat_session.participants.add(request.user.siteuser)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

@@ -18,6 +18,7 @@ def product_list(request):
             'id',
             'name',
             'description',
+             'image_url',
             'is_active',
             'created_at',
             'updated_at',
@@ -25,6 +26,7 @@ def product_list(request):
             'category__category_name',
             'brand',
             'title'
+           
         )
 
         product_list = []
@@ -40,12 +42,14 @@ def product_list(request):
                 'id': product['id'],
                 'name': product['name'],
                 'description': product['description'],
+                'image_url': product['image_url'],
                 'is_active': product['is_active'],
                 'created_at': product['created_at'],
                 'updated_at': product['updated_at'],
                 'brand': product['brand'],
                 'price': price,
                 'title': product['title'],
+                
                 'category': {
                     'id': product['category__id'],
                     'category_name': product['category__category_name']
