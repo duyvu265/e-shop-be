@@ -76,6 +76,8 @@ REST_FRAMEWORK = {
     ),
 }
 
+CSRF_COOKIE_NAME = "csrftoken"
+CSRF_COOKIE_HTTPONLY = False  
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
