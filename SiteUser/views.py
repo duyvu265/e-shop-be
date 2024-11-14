@@ -6,14 +6,13 @@ from Products.models import Product
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.shortcuts import get_object_or_404
-from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 from ShoppingCart.models import ShoppingCart
 from ProductsItem.models import ProductItem
 import logging
 import requests
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAdminUser,IsAuthenticated
+from rest_framework.decorators import  permission_classes
+from rest_framework.permissions import  IsAdminUser,IsAuthenticated
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -152,7 +151,7 @@ def admin_login(request):
                     'id': site_user.id,
                     'email': user.email,
                     'username': user.username,
-                    'avatar': site_user.avatar.url if site_user.avatar else None,
+                    'avatar': site_user.avatar if site_user.avatar else None,
                     'user_type': site_user.user_type,
                 }
             }, status=200)
@@ -178,8 +177,6 @@ def login(request):
 
         if user.check_password(password):
             site_user = SiteUser.objects.get(user=user)
-
-            # Kiểm tra nếu tài khoản là admin
             if site_user.user_type == 'admin':
                 return JsonResponse({'error': 'Admin accounts are not allowed to login here!'}, status=403)
 
@@ -275,50 +272,34 @@ def get_liked_products(request, user_id):
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 @csrf_exempt
-@permission_classes([IsAdminUser])  
-def get_users_list(request):
+@permission_classes([IsAdminUser])
+def get_users_list(request, user_type=None):
     if request.method == 'GET':
-        users = SiteUser.objects.filter(user_type='staff') 
+        if user_type:
+            users = SiteUser.objects.filter(user_type=user_type)
+        else:
+            users = SiteUser.objects.exclude(user_type='admin')  
+
         users_list = []
 
         for user in users:
             users_list.append({
                 'id': user.id,
-                'username': user.user.username,
-                'email': user.user.email,
-                'avatar': user.avatar.url if user.avatar else None,
+                'username': user.user.username,  
+                'email': user.user.email,  
+                'avatar': user.avatar if user.avatar else None,
                 'phone_number': user.phone_number,
                 'created_at': user.created_at,
                 'updated_at': user.updated_at,
-                'user_type':user.user_type,
+                'user_type': user.user_type,
+                'status': user.user.is_active,
             })
 
         return JsonResponse({'users': users_list}, status=200)
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 
-@csrf_exempt
-@permission_classes([IsAdminUser]) 
-def get_customers(request):
-    if request.method == 'GET':
-        customers = SiteUser.objects.filter(user_type='customer') 
-        customers_list = []
 
-        for customer in customers:
-            customers_list.append({
-                'id': customer.id,
-                'username': customer.user.username,
-                'email': customer.user.email,
-                'avatar': customer.avatar.url if customer.avatar else None,
-                'phone_number': customer.phone_number,
-                'created_at': customer.created_at,
-                'updated_at': customer.updated_at,
-                'user_type': customer.user_type,
-            })
-
-        return JsonResponse({'customers': customers_list}, status=200)
-
-    return JsonResponse({'error': 'Invalid request!'}, status=400)
 @csrf_exempt
 @permission_classes([IsAdminUser])
 def get_staff_user_by_id(request, id):

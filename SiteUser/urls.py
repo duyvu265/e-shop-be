@@ -6,7 +6,6 @@ from .views import (
     delete_site_user,
     get_user_by_id,
     get_staff_user_by_id,
-    get_customers,
     get_customer_user_by_id,
     update_staff_user,
     update_customer_user
@@ -15,7 +14,6 @@ from .views import (
 
 urlpatterns = [
     path('li-users', get_users_list, name='get_users_list'),
-    path('li-customers', get_customers, name='get_customers_list'),
     path('create/', create_site_user, name='create_site_user'),
     path('<int:id>', get_user_by_id, name='get_user_by_id'),
     path('<int:id>/update/', update_site_user, name='update_site_user'),
