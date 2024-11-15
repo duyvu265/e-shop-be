@@ -119,7 +119,7 @@ def get_product_by_id(request, product_id):
                 'price': item.price,
                 'color': item.color,
                 'size': item.size,
-                'product_images': product_images,
+                'product_images': product_images,             
             })
 
         product_data = {
@@ -128,6 +128,7 @@ def get_product_by_id(request, product_id):
             'description': product.description,
             'brand': product.brand,
             'title': product.title,
+            'image_url': product.image_url,
             'category': {
                 'id': product.category.id,
                 'category_name': product.category.category_name

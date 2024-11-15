@@ -5,8 +5,6 @@ from .views import (
     update_site_user, 
     delete_site_user,
     get_user_by_id,
-    get_staff_user_by_id,
-    get_customer_user_by_id,
     update_staff_user,
     update_customer_user
     
@@ -19,8 +17,7 @@ urlpatterns = [
     path('<int:id>/update/', update_site_user, name='update_site_user'),
     path('<int:id>/update/', update_site_user, name='update_site_user'),
     path('<int:id>/delete/', delete_site_user, name='delete_site_user'),
-    path('staff/<int:id>/', get_staff_user_by_id, name='get_staff_user_by_id'),
-    path('customer/<int:id>/', get_customer_user_by_id, name='get_customer_user_by_id'),
+    path('profile/<int:id>/', get_user_by_id, name='get_staff_user_by_id'),
     path('staff/<int:id>/update/', update_staff_user, name='update_staff_user'),
     path('customer/<int:id>/update/', update_customer_user, name='update_customer_user'),
 ]

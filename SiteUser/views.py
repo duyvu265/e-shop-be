@@ -215,7 +215,7 @@ def login(request):
                     'id': site_user.id,
                     'email': user.email,
                     'username': user.username,
-                    'avatar': site_user.avatar.url if site_user.avatar else None,
+                    'avatar': site_user.avatar if site_user.avatar else None,
                     'phone_number': site_user.phone_number,
                     'liked_products': liked_products_list,
                     'user_type': site_user.user_type,
@@ -301,30 +301,9 @@ def get_users_list(request, user_type=None):
 
 
 @csrf_exempt
-@permission_classes([IsAdminUser])
-def get_staff_user_by_id(request, id):
+def get_user_by_id(request, id, user_type):
     if request.method == 'GET':
-        user = get_object_or_404(SiteUser, id=id, user_type='staff')
-        user_data = {
-            'id': user.id,
-            'username': user.user.username,
-            'email': user.user.email,
-            'avatar': user.avatar.url if user.avatar else None,
-            'phone_number': user.phone_number,
-            'created_at': user.created_at,
-            'updated_at': user.updated_at,
-            'user_type': user.user_type,
-        }
-        return JsonResponse(user_data, status=200)
-
-    return JsonResponse({'error': 'Invalid request!'}, status=400)
-
-
-@csrf_exempt
-@permission_classes([IsAdminUser])
-def get_customer_user_by_id(request, id):
-    if request.method == 'GET':
-        user = get_object_or_404(SiteUser, id=id, user_type='customer')
+        user = get_object_or_404(SiteUser, id=id, user_type=user_type)
         user_data = {
             'id': user.id,
             'username': user.user.username,
@@ -409,11 +388,35 @@ def get_user_by_id(request, id):
             'id': user.id,
             'username': user.user.username,
             'email': user.user.email,
-            'avatar': user.avatar.url if user.avatar else None,
+            'avatar': user.avatar if user.avatar else None,
             'phone_number': user.phone_number,
             'created_at': user.created_at,
             'updated_at': user.updated_at,
         }
+        addresses = Address.objects.filter(site_user=user)
+        user_data['addresses'] = [
+            {
+                'street': address.street,
+                'city': address.city,
+                'state': address.state,
+                'postal_code': address.postal_code,
+                'country': address.country,
+                'is_primary': address.is_primary,
+                'notes': address.notes,
+            }
+            for address in addresses
+        ]
+        payment_methods = UserPaymentMethod.objects.filter(user=user)
+        user_data['payment_methods'] = [
+            {
+                'card_number': payment.card_number,
+                'expiry_date': payment.expiry_date,
+                'cardholder_name': payment.cardholder_name,
+                'is_active': payment.is_active,
+            }
+            for payment in payment_methods
+        ]
+
         return JsonResponse(user_data, status=200)
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
