@@ -134,8 +134,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'e_shop_database',
         'USER': 'root',
-        "PASSWORD": '12345678',
-        # "PASSWORD": '123456',
+        # "PASSWORD": '12345678',
+        "PASSWORD": '123456',
         "HOST" : ''
     }
 }
@@ -180,3 +180,9 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # Ví dụ với Gmail
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'duyvu04697@gmail.com'  # Địa chỉ email của bạn
+EMAIL_HOST_PASSWORD = 'anhduy1997@'  # Mật khẩu email

@@ -7,8 +7,8 @@ class SiteUser(models.Model):
         ('admin', 'Admin'),
         ('super_admin', 'Super Admin'),
         ('customer', 'Customer'),
-        ('manager', 'manager'),
-         ('staff', 'Staff'),
+        ('manager', 'Manager'),
+        ('staff', 'Staff'),
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -17,6 +17,9 @@ class SiteUser(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
     user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='customer')
+
+    verification_code = models.CharField(max_length=6, blank=True, null=True)
+    verification_code_sent_at = models.DateTimeField(blank=True, null=True)  
 
     def __str__(self):
         return self.user.username

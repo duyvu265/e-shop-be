@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path,include
-from SiteUser.views import login,create_site_user,google_login,admin_login
+from SiteUser.views import login,create_site_user,google_login,admin_login,send_verification_code,verify_code,reset_password
 from Banner.views import banner_list
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
@@ -36,5 +36,8 @@ urlpatterns = [
     path('chat/', include('Chat.urls')), 
     path('banners/', include('Banner.urls')), 
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), 
+    path('send-verification-code/', send_verification_code, name='send_verification_code'),
+    path('verify-code/', verify_code, name='verify_code'),
+    path('reset-password/', reset_password, name='reset_password'),
     
 ]

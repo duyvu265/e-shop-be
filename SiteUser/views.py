@@ -13,6 +13,11 @@ import logging
 import requests
 from rest_framework.decorators import  permission_classes
 from rest_framework.permissions import  IsAdminUser,IsAuthenticated
+import json
+import logging
+import random
+import string
+from django.core.mail import send_mail
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -296,6 +301,87 @@ def get_users_list(request, user_type=None):
             })
 
         return JsonResponse({'users': users_list}, status=200)
+
+    return JsonResponse({'error': 'Invalid request!'}, status=400)
+
+@csrf_exempt
+def send_verification_code(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        email = data.get('email')
+
+        try:
+            site_user = SiteUser.objects.filter(user__email=email).first()
+            if not site_user:
+                return JsonResponse({'error': 'User not found!'}, status=404)
+
+            verification_code = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+            site_user.verification_code = verification_code  
+            site_user.save()
+
+            send_mail(
+                'Password Reset Verification Code',
+                f'Your verification code is: {verification_code}',
+                'from@example.com',
+                [email],
+                fail_silently=False,
+            )
+
+            return JsonResponse({'message': 'Verification code sent successfully!'}, status=200)
+
+        except Exception as e:
+            logging.error(f'Error sending verification code: {str(e)}')
+            return JsonResponse({'error': 'An unexpected error occurred!'}, status=500)
+
+    return JsonResponse({'error': 'Invalid request!'}, status=400)
+
+@csrf_exempt
+def verify_code(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        email = data.get('email')
+        code = data.get('code')
+
+        try:
+            site_user = SiteUser.objects.filter(user__email=email).first()
+            if not site_user:
+                return JsonResponse({'error': 'User not found!'}, status=404)
+
+            if site_user.verification_code == code:
+                return JsonResponse({'message': 'Verification code is valid!'}, status=200)
+            else:
+                return JsonResponse({'error': 'Invalid verification code!'}, status=400)
+
+        except Exception as e:
+            logging.error(f'Error verifying code: {str(e)}')
+            return JsonResponse({'error': 'An unexpected error occurred!'}, status=500)
+
+    return JsonResponse({'error': 'Invalid request!'}, status=400)
+
+
+@csrf_exempt
+def reset_password(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        email = data.get('email')
+        new_password = data.get('new_password')
+
+        try:
+            site_user = SiteUser.objects.filter(user__email=email).first()
+            if not site_user:
+                return JsonResponse({'error': 'User not found!'}, status=404)
+
+            user = site_user.user
+            user.set_password(new_password)
+            user.save()
+            site_user.verification_code = None
+            site_user.save()
+
+            return JsonResponse({'message': 'Password has been reset successfully!'}, status=200)
+
+        except Exception as e:
+            logging.error(f'Error resetting password: {str(e)}')
+            return JsonResponse({'error': 'An unexpected error occurred!'}, status=500)
 
     return JsonResponse({'error': 'Invalid request!'}, status=400)
 
