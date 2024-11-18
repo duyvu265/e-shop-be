@@ -514,13 +514,14 @@ def create_site_user(request):
         username = data.get('username')
         password = data.get('password')
         email = data.get('email')
-        avatar = data.get('avatar')
+        avatar = "https://as2.ftcdn.net/v2/jpg/08/19/66/31/1000_F_819663119_che4sZSrmQv8uQJOzuN9TVQFQNHJlfQ2.webp"
         phone_number = data.get('phone_number')
 
         try:
-            user = User.objects.create_user(username=username, password=password, email=email ,user_type='customer')
-            site_user = SiteUser(user=user, avatar=avatar, phone_number=phone_number)
+            user = User.objects.create_user(username=username, password=password, email=email )
+            site_user = SiteUser(user=user, avatar=avatar, phone_number=phone_number,user_type='customer')
             site_user.save()
+            user.save()
             return JsonResponse({'message': 'SiteUser created successfully!'}, status=201)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)

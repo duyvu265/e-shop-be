@@ -9,7 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class SiteUserSerializer(serializers.ModelSerializer):
     user = UserSerializer()
-
+    username = serializers.CharField(source='user.username') 
     class Meta:
         model = SiteUser
-        fields = ['user', 'avatar', 'phone_number','liked_products','user_type']
+        fields = ['user', 'avatar', 'phone_number','liked_products','user_type','username']

@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'SiteUser.apps.SiteUserConfig',        
     'TransactionHistory.apps.TransactionHistoryConfig', 
     'Banner.apps.BannerConfig', 
+    'Reviews.apps.ReviewsConfig',
     'rest_framework',
     'corsheaders'
 ]
@@ -134,8 +135,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'e_shop_database',
         'USER': 'root',
-        # "PASSWORD": '12345678',
-        "PASSWORD": '123456',
+        "PASSWORD": '12345678',
+        # "PASSWORD": '123456',
         "HOST" : ''
     }
 }
