@@ -1,28 +1,44 @@
 from rest_framework import serializers
-from .models import ChatSession, Message, TypingStatus
+from .models import ChatSession, Message, TypingStatus, Notification
+from django.contrib.auth.models import User
 from SiteUser.models import SiteUser
 
+class SiteUserSerializer(serializers.ModelSerializer):
+    is_admin = serializers.BooleanField(source='user.is_staff', read_only=True)
+
+    class Meta:
+        model = SiteUser
+        fields = ['id', 'user', 'avatar', 'phone_number', 'user_type', 'is_admin']
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender = SiteUserSerializer(read_only=True)  
+
+    class Meta:
+        model = Message
+        fields = ['id', 'chat_session', 'sender', 'message', 'timestamp', 'is_read', 'is_sent', 'attachments', 'status']
+        read_only_fields = ['id', 'timestamp']
+
 class ChatSessionSerializer(serializers.ModelSerializer):
-    participants = serializers.PrimaryKeyRelatedField(queryset=SiteUser.objects.all(), many=True)
+    participants = SiteUserSerializer(many=True, read_only=True) 
 
     class Meta:
         model = ChatSession
         fields = ['id', 'participants', 'created_at']
-
-class MessageSerializer(serializers.ModelSerializer):
-    sender = serializers.PrimaryKeyRelatedField(queryset=SiteUser.objects.all())
-    chat_session = serializers.PrimaryKeyRelatedField(queryset=ChatSession.objects.all())
-    status = serializers.ChoiceField(choices=Message.STATUS_CHOICES, required=False)  # Thêm trạng thái tin nhắn
-
-    class Meta:
-        model = Message
-        fields = ['id', 'chat_session', 'sender', 'message', 'timestamp', 'is_read', 'attachments', 'status']
+        read_only_fields = ['id', 'created_at']
 
 class TypingStatusSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=SiteUser.objects.all())
-    chat_session = serializers.PrimaryKeyRelatedField(queryset=ChatSession.objects.all())
-    is_typing = serializers.BooleanField()
+    user = SiteUserSerializer(read_only=True)  
 
     class Meta:
         model = TypingStatus
-        fields = ['user', 'chat_session', 'is_typing']
+        fields = ['id', 'user', 'chat_session', 'is_typing']
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    user = SiteUserSerializer(read_only=True)  
+    message = MessageSerializer(read_only=True)  
+
+    class Meta:
+        model = Notification
+        fields = ['id', 'user', 'message', 'is_read', 'timestamp']
+        read_only_fields = ['id', 'timestamp']

@@ -17,7 +17,7 @@ class Review(models.Model):
     comment = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    image_url = models.URLField()
     class Meta:
         unique_together = ('user', 'product')  
         ordering = ['-created_at']  

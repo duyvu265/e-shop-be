@@ -4,6 +4,8 @@ from rest_framework import status
 from .models import Review
 from .serializer import ReviewSerializer
 from rest_framework.permissions import AllowAny
+from django.shortcuts import get_object_or_404
+from SiteUser.models import SiteUser
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -16,17 +18,18 @@ def get_reviews_by_product(request, product_id):
 def add_review(request, product_id):
     if not request.user.is_authenticated:
         return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    site_user = get_object_or_404(SiteUser, user=request.user)
+
     data = request.data
-    print("request",request)
-    data['product'] = product_id
-    data['user'] = request.user.id
+    data['product'] = product_id 
     serializer = ReviewSerializer(data=data)
+
     if serializer.is_valid():
-        serializer.save()
+        serializer.save(user=site_user) 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 @api_view(['PUT'])
 def update_review(request, review_id):
     try:
