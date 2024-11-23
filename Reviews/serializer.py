@@ -10,9 +10,15 @@ class SiteUserSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'avatar']
 
 class ReviewSerializer(serializers.ModelSerializer):
-    user = SiteUserSerializer(read_only=True) 
+    user = SiteUserSerializer(read_only=True)
 
     class Meta:
         model = Review
-        fields = ['id', 'user', 'product', 'rating', 'comment','image_url' ,'created_at', 'updated_at']
+        fields = ['id', 'user', 'product', 'rating', 'comment', 'image_url', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate_image_url(self, value):
+        if value and not value.startswith("http"):
+            raise serializers.ValidationError("Invalid URL for image.")
+        return value
+

@@ -30,26 +30,40 @@ def add_review(request, product_id):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+from rest_framework.permissions import IsAuthenticated
+
 @api_view(['PUT'])
+@permission_classes([IsAuthenticated])
 def update_review(request, review_id):
     try:
         review = Review.objects.get(id=review_id)
     except Review.DoesNotExist:
         return Response({'detail': 'Review not found'}, status=status.HTTP_404_NOT_FOUND)
-    if review.user != request.user:
+
+    site_user = get_object_or_404(SiteUser, user=request.user)
+
+    if review.user != site_user:
         return Response({'detail': 'You do not have permission to edit this review.'}, status=status.HTTP_403_FORBIDDEN)
+
     serializer = ReviewSerializer(review, data=request.data, partial=True)  
     if serializer.is_valid():
         serializer.save()
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 @api_view(['DELETE'])
 def delete_review(request, review_id):
     try:
         review = Review.objects.get(id=review_id)
     except Review.DoesNotExist:
         return Response({'detail': 'Review not found'}, status=status.HTTP_404_NOT_FOUND)
-    if review.user != request.user:
+
+    site_user = get_object_or_404(SiteUser, user=request.user)
+
+    if review.user != site_user:
         return Response({'detail': 'You do not have permission to delete this review.'}, status=status.HTTP_403_FORBIDDEN)
+
     review.delete()
     return Response({'detail': 'Review deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+
