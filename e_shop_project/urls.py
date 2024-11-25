@@ -33,7 +33,6 @@ urlpatterns = [
     path('categories/', include('ProductsCategory.urls')), 
     path('user/', include('SiteUser.urls')), 
     path('cart/', include('ShoppingCart.urls')), 
-    path('chat/', include('Chat.urls')), 
     path('reviews/', include('Reviews.urls')), 
     path('discount/', include('Discount.urls')), 
     path('banners/', include('Banner.urls')), 
