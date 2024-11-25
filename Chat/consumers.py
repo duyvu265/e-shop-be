@@ -3,22 +3,40 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from .models import ChatSession, Message, TypingStatus
 from channels.db import database_sync_to_async
 from SiteUser.models import SiteUser
+from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.tokens import AccessToken
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.chat_session_id = self.scope['url_route']['kwargs']['chat_session_id']
-        self.chat_session = await self.get_chat_session()
+        token = self.scope.get('query_string', b'').decode().split('=')[-1]  
 
-        if self.scope['user'] not in [self.chat_session.user, self.chat_session.admin]:
-            await self.close()
+        try:
+            access_token = AccessToken(token)
+            user = await database_sync_to_async(get_user_model().objects.get)(id=access_token['user_id'])
+
+            self.scope['user'] = user 
+        except Exception as e:
+            print(f"Token validation failed: {e}")
+            await self.close()  
             return
 
-        self.room_group_name = f"chat_{self.chat_session.id}"
+        self.chat_session_id = self.scope['url_route']['kwargs']['chat_session_id']
+        self.chat_session = await database_sync_to_async(ChatSession.objects.get)(id=self.chat_session_id)
+
+        if self.scope['user'] != self.chat_session.customer and not self.scope['user'].is_staff:
+            await self.close() 
+            return
+
+        self.room_group_name = f"chat_{self.chat_session_id}"
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
         )
         await self.accept()
+
+        await self.send(text_data=json.dumps({
+            'message': f'User {self.scope["user"].email} has entered the chat.'
+        }))
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
@@ -34,10 +52,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         chat_session = await self.get_chat_session()
         sender = await self.get_user(user_id)
-        new_message = Message.objects.create(
+        new_message = await database_sync_to_async(Message.objects.create)(
             chat_session=chat_session,
             sender=sender,
-            message=message
+            message=message,
         )
 
         await self.channel_layer.group_send(
@@ -45,7 +63,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             {
                 'type': 'chat_message',
                 'message': new_message.message,
-                'sender': sender.user.email
+                'sender': sender.email,
             }
         )
 
@@ -58,7 +76,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await self.send(text_data=json.dumps({
             'message': message,
-            'sender': sender
+            'sender': sender,
         }))
 
     async def typing_status(self, event):
@@ -89,6 +107,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             {
                 'type': 'typing_status',
                 'is_typing': is_typing,
-                'user': user.user.email
+                'user': user.email
             }
         )

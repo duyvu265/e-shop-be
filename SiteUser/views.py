@@ -237,22 +237,33 @@ def login(request):
 
 @csrf_exempt
 @permission_classes([IsAuthenticated])
+
 def like_product(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            product_id = data.get('productId')
+            product_id = data.get('product_id')
             user_id = data.get('userId')
+
+            if not user_id or not product_id:
+                return JsonResponse({'error': 'User ID and Product ID are required!'}, status=400)
 
             site_user = get_object_or_404(SiteUser, id=user_id)
             product = get_object_or_404(Product, id=product_id)
-            liked_product, created = LikedProduct.objects.get_or_create(user=site_user, product=product)
 
-            if created:
-                return JsonResponse({'message': 'Product liked successfully!'}, status=201)
+            liked_product = LikedProduct.objects.filter(user=site_user, product=product).first()
+
+            if liked_product:
+                liked_product.delete()
+                return JsonResponse({'message': 'Product unliked successfully!', 'liked': False}, status=200)
             else:
-                return JsonResponse({'message': 'Product already liked!'}, status=200)
+                LikedProduct.objects.create(user=site_user, product=product)
+                return JsonResponse({'message': 'Product liked successfully!', 'liked': True}, status=201)
 
+        except SiteUser.DoesNotExist:
+            return JsonResponse({'error': 'No SiteUser matches the given query.'}, status=404)
+        except Product.DoesNotExist:
+            return JsonResponse({'error': 'No Product matches the given query.'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
 
@@ -513,16 +524,17 @@ def create_site_user(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         username = data.get('username')
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
         password = data.get('password')
         email = data.get('email')
         avatar = "https://as2.ftcdn.net/v2/jpg/08/19/66/31/1000_F_819663119_che4sZSrmQv8uQJOzuN9TVQFQNHJlfQ2.webp"
         phone_number = data.get('phone_number')
 
         try:
-            user = User.objects.create_user(username=username, password=password, email=email )
+            user = User.objects.create_user(username=username, password=password, email=email,last_name=last_name,first_name=first_name )
             site_user = SiteUser(user=user, avatar=avatar, phone_number=phone_number,user_type='customer')
             site_user.save()
-            user.save()
             return JsonResponse({'message': 'SiteUser created successfully!'}, status=201)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)

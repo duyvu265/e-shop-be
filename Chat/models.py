@@ -3,6 +3,7 @@ from SiteUser.models import SiteUser
 from django.utils import timezone
 from datetime import timedelta
 
+
 class ChatSession(models.Model):
     user = models.ForeignKey(SiteUser, related_name='user_chat_sessions', on_delete=models.CASCADE)
     admin = models.ForeignKey(SiteUser, related_name='admin_chat_sessions', on_delete=models.CASCADE, null=True, blank=True)
@@ -10,6 +11,12 @@ class ChatSession(models.Model):
 
     def __str__(self):
         return f"Chat session between {self.user.user.email} and {self.admin.user.email} started at {self.created_at}"
+    admin = models.ForeignKey(SiteUser, related_name='admin_chat_sessions', on_delete=models.SET_NULL, null=True)
+    customer = models.OneToOneField(SiteUser, related_name='customer_chat_session', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Chat session {self.id} between {self.customer.user.email} and admin started at {self.created_at}"
 
     def add_admin_participant(self):
         admin_user = SiteUser.objects.filter(is_admin=True).first()

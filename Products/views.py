@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from .models import Product
 from ProductsItem.models import ProductItem, ProductImage
 from ProductsCategory.models import ProductCategory
+from SiteUser.models import LikedProduct
 from django.db.models import Min, Max
 import json
 import logging
@@ -122,6 +123,12 @@ def get_product_by_id(request, product_id):
                 'product_images': product_images,             
             })
 
+        liked = False
+        if request.user.is_authenticated:
+            liked_product = LikedProduct.objects.filter(user=request.user, product=product).first()
+            if liked_product:
+                liked = True
+
         product_data = {
             'id': product.id,
             'name': product.name,
@@ -136,10 +143,11 @@ def get_product_by_id(request, product_id):
             'product_items': product_items,
             'is_active': product.is_active,
             'created_at': product.created_at,
-            'updated_at': product.updated_at
+            'updated_at': product.updated_at,
+            'liked': liked  
         }
         return JsonResponse(product_data, status=200)
-    
+
     return JsonResponse({'error': 'Invalid request method!'}, status=400)
 
 
