@@ -4,16 +4,23 @@ from django.utils import timezone
 from datetime import timedelta
 
 class ChatSession(models.Model):
-    participants = models.ManyToManyField(SiteUser, related_name='chat_sessions')
+    user = models.ForeignKey(SiteUser, related_name='user_chat_sessions', on_delete=models.CASCADE)
+    admin = models.ForeignKey(SiteUser, related_name='admin_chat_sessions', on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Chat session {self.id} started at {self.created_at}"
+        return f"Chat session between {self.user.user.email} and {self.admin.user.email} started at {self.created_at}"
 
     def add_admin_participant(self):
         admin_user = SiteUser.objects.filter(is_admin=True).first()
         if admin_user:
-            self.participants.add(admin_user)
+            self.admin = admin_user
+            self.save()
+
+    def add_user_participant(self, user):
+        self.user = user
+        self.save()
+
 
 
 class Message(models.Model):
@@ -35,21 +42,17 @@ class Message(models.Model):
     def __str__(self):
         return f"Message from {self.sender.user.email} at {self.timestamp}"
 
-    def can_edit_or_delete(self):
-        return timezone.now() - self.timestamp <= timedelta(hours=1)
+    def notify_new_message(self):
+        recipient = self.chat_session.user if self.sender != self.chat_session.user else self.chat_session.admin
+        Notification.objects.create(
+            user=recipient,
+            message=self
+        )
+        
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.notify_new_message()
 
-    def delete(self, *args, **kwargs):
-        if self.can_edit_or_delete():
-            super().delete(*args, **kwargs)
-        else:
-            raise ValueError("You can only delete a message within 1 hour after sending.")
-
-    def edit(self, new_message):
-        if self.can_edit_or_delete():
-            self.message = new_message
-            self.save()
-        else:
-            raise ValueError("You can only edit a message within 1 hour after sending.")
 
 
 class TypingStatus(models.Model):

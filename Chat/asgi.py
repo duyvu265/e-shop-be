@@ -5,7 +5,7 @@ from channels.auth import AuthMiddlewareStack
 from Chat import routing
 from Chat.middleware import TokenAuthMiddleware  
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'your_project_name.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'e_shop_project.settings')
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),

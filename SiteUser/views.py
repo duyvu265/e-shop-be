@@ -130,6 +130,7 @@ def admin_login(request):
         password = data.get('password')
 
         User = get_user_model()  
+        print(User)
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:

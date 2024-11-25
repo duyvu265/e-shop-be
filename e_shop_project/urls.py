@@ -35,6 +35,7 @@ urlpatterns = [
     path('cart/', include('ShoppingCart.urls')), 
     path('chat/', include('Chat.urls')), 
     path('reviews/', include('Reviews.urls')), 
+    path('discount/', include('Discount.urls')), 
     path('banners/', include('Banner.urls')), 
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), 
     path('send-verification-code/', send_verification_code, name='send_verification_code'),

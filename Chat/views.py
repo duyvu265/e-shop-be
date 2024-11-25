@@ -28,7 +28,6 @@ def chat_sessions(request):
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 @api_view(['GET', 'POST'])
 def messages(request, chat_session_id):
     if not request.user.is_authenticated:
@@ -51,6 +50,7 @@ def messages(request, chat_session_id):
             serializer.save(chat_session=chat_session, sender=sender)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['POST'])
 def mark_message_as_read(request, message_id):
